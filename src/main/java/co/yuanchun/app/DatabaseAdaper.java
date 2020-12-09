@@ -37,8 +37,11 @@ public class DatabaseAdaper {
                 "Email VARCHAR(32)," + 
                 "CreationDate DATETIME," +
                 "LastLogin DATETIME);";
+            String dateIndexSql = "CREATE INDEX expire_idx " +
+                "ON " + urlTableName + " (ExpirationDate)";
             statement.executeUpdate(urlSchemaSql);
             statement.execute(userSchemaSql);
+            statement.execute(dateIndexSql);
             statement.close();
         } catch (SQLException e) {            
             e.printStackTrace();
