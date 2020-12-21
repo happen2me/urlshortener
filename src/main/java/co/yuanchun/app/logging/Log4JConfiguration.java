@@ -1,4 +1,4 @@
-package co.yuanchun.app;
+package co.yuanchun.app.logging;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;

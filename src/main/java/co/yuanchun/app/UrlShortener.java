@@ -7,16 +7,27 @@ import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * Encapsulates main operations of shortening URL, this inclues
+ * generating, inserting, finding url:alias pairs and collision
+ * detection.
+ */
 public class UrlShortener {
-    final String DB_LOC = "jdbc:sqlite:sample.db";
+    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
+    private static final Logger logger = LogManager.getLogger(UrlShortener.class.getName());
+
+    final String DB_LOC_PREFIX = "jdbc:sqlite:";
     final int ALIAS_LENGTH = 6;
     final String HASH_METHOD = "MD5";
     final int VALID_YEARS = 5;
     DatabaseAdaper dbAdapter;
 
-    public UrlShortener() {
+    public UrlShortener(String databasePath) {
         try {
-            dbAdapter = new DatabaseAdaper(DB_LOC);
+            dbAdapter = new DatabaseAdaper(DB_LOC_PREFIX + databasePath);
         } catch (SQLException e) {
             System.err.println("Failed to connect to data base.");
             e.printStackTrace();

@@ -2,23 +2,33 @@ package co.yuanchun.app;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import javax.annotation.Nullable;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class DatabaseAdaper {
+    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
+    private final static Logger logger = LogManager.getLogger(DatabaseAdaper.class.getName());
+
+
     private Connection connection;
-    private String urlTableName;
-    private String userTableName;
+    private final static String urlTableName = "URL";
+    private final static String userTableName = "User";
+
+    private final static String insertSQL = "INSERT INTO URL(Hash, OriginalURL, CreationDate, ExpirationDate, UserID) VALUES(?, ?, ?, ?, ?)";
+    private PreparedStatement insertQuery;
 
     public DatabaseAdaper(String dbLocation) throws SQLException {
         this.connection = DriverManager.getConnection(dbLocation);
-        this.urlTableName = "URL";
-        this.userTableName = "User";
     }
 
     public void initializeDb(){        
@@ -46,20 +56,42 @@ public class DatabaseAdaper {
         } catch (SQLException e) {            
             e.printStackTrace();
         }
+
+        // setup
+        try {
+            insertQuery = connection.prepareStatement(insertSQL);
+        } catch (SQLException e) {
+            logger.error(e.getMessage());
+        }
     }
 
     public void insertUrl(String alias, String url, Date creationDate, 
         @Nullable Date expirationDate, @Nullable Integer userID) {
         try {
-            Statement statement = connection.createStatement();
-            String insertSql = "INSERT INTO " + urlTableName +
-                "(Hash, OriginalURL, CreationDate, ExpirationDate, UserID) " +
-                String.format("VALUES('%s', '%s', '%s', '%s', %s);", alias, url, toSqlDate(creationDate), 
-                    expirationDate==null ? "NULL" : toSqlDate(expirationDate),
-                    userID==null ? "NULL" : userID);
-                statement.executeUpdate(insertSql);
-        } catch (SQLException e) {
+            
+            // Statement statement = connection.createStatement();
+            // String insertSql = "INSERT INTO " + urlTableName +
+            //     "(Hash, OriginalURL, CreationDate, ExpirationDate, UserID) " +
+            //     String.format("VALUES('%s', '%s', '%s', '%s', %s);", alias, url, toSqlDate(creationDate), 
+            //         expirationDate==null ? "NULL" : toSqlDate(expirationDate),
+            //         userID==null ? "NULL" : userID);
+            // statement.executeUpdate(insertSql);
+            insertQuery.setString(1, alias);
+            insertQuery.setString(2, url);
+            insertQuery.setString(3, toSqlDate(creationDate));
+            insertQuery.setString(4, toSqlDate(expirationDate));
+            insertQuery.setNull(5, java.sql.Types.INTEGER);
+        }
+        catch (SQLException e) {
             e.printStackTrace();
+        }
+        try {
+            int updatedRecords = insertQuery.executeUpdate();
+            if (updatedRecords != 1) {
+              logger.error("No record was updated.");
+            }
+        } catch (SQLException e) {
+            logger.debug(e.getMessage());
         }
     }
 
@@ -87,6 +119,7 @@ public class DatabaseAdaper {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        logger.info("Found url: " + url + " for alias " + alias);
         return url;
     }
 
