@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -18,11 +19,12 @@ public class ReceiverWorker implements Runnable{
 
     private Socket clientSocket = null;
     private boolean isStopped;
-    // private DatabaseAdaper database = null;
+    private DatabaseAdaper database;
 
-    public ReceiverWorker(Socket clientSocket){
+    public ReceiverWorker(Socket clientSocket, DatabaseAdaper database){
         this.clientSocket = clientSocket;
         this.isStopped = false;
+        this.database = database;
     }
 
     @Override
@@ -49,10 +51,21 @@ public class ReceiverWorker implements Runnable{
                         output.writeObject("hello client");;
                     }
                 }
-                // else if(o instanceof JSONObject){
-                //     // TODO: save to database
-                //     logger.debug("rceived JSON");
-                // }
+                else if(o instanceof JSONObject){
+                    logger.debug("rceived JSON");
+                    JSONObject record = (JSONObject) o;
+                    if (record.getString("type").equals("db-insert")) {
+                        String alias = record.getString("alias");
+                        String url = record.getString("url");
+                        String expirationDate = record.getString("expires");
+                        database.insertUrl(alias, url, expirationDate);
+                        output.writeObject("wrote to db");
+                    }
+                    else if(record.getString("type").equals("cmd-close")){ 
+                        // Close socket connection to client
+                        stop();
+                    }
+                }
                 else{
                     logger.error("Got unexpected object");
                 }

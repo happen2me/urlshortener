@@ -54,11 +54,17 @@ public class DatabaseAdaper {
         }
     }
 
-    public void insertUrl(String alias, String url, Calendar expirationDate) {
+    /**
+     * Insert a url record into database
+     * @param alias hashed url
+     * @param url original url
+     * @param expirationDate needs to be in the format of "yyyy-MM-dd HH:mm:ss"
+     */
+    public void insertUrl(String alias, String url, String expirationDate){
         try {
             insertQuery.setString(1, alias);
             insertQuery.setString(2, url);
-            insertQuery.setString(3, toSqlDate(expirationDate));
+            insertQuery.setString(3, expirationDate);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -73,7 +79,12 @@ public class DatabaseAdaper {
         logger.debug("Database: successfully inserted" + alias+" : " + url);
     }
 
-    private String toSqlDate(Calendar date){
+    public void insertUrl(String alias, String url, Calendar expirationDate) {
+        String expireDateString = toSqlDate(expirationDate);
+        insertUrl(alias, url, expireDateString);
+    }
+
+    public static String toSqlDate(Calendar date){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return sdf.format(date.getTime());
     }

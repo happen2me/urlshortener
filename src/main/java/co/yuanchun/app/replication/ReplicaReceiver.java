@@ -7,6 +7,8 @@ import java.net.Socket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import co.yuanchun.app.DatabaseAdaper;
+
 public class ReplicaReceiver implements Runnable {
     private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getName());
 
@@ -14,12 +16,14 @@ public class ReplicaReceiver implements Runnable {
     private ServerSocket serverSocket;
     private boolean isStopped;
     protected Thread runningThread;
+    private DatabaseAdaper database;
 
-    public ReplicaReceiver(int replicatorPort){
+    public ReplicaReceiver(int replicatorPort, DatabaseAdaper database){
         this.serverPort = replicatorPort;
         this.isStopped = false;
         this.serverSocket = null;
         this.runningThread = null;
+        this.database = database;
     }
 
     @Override
@@ -41,7 +45,7 @@ public class ReplicaReceiver implements Runnable {
                 throw new RuntimeException("Error accepting client connection", e);
             }
             new Thread(
-                new ReceiverWorker(clientSocket)
+                new ReceiverWorker(clientSocket, database)
             ).start();
         }
 
@@ -72,7 +76,7 @@ public class ReplicaReceiver implements Runnable {
     //test
     public static void main(String[] args) {
         int server_port = Integer.parseInt(args[0]);
-        ReplicaReceiver server = new ReplicaReceiver(server_port);
+        ReplicaReceiver server = new ReplicaReceiver(server_port, null);
         server.run();
     }
     

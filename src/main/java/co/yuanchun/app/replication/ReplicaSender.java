@@ -4,9 +4,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Calendar;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
+
+import co.yuanchun.app.DatabaseAdaper;
 
 public class ReplicaSender {
     private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getName());
@@ -33,6 +37,34 @@ public class ReplicaSender {
         } catch (IOException e) {
             logger.error("Error when get out/input stream");
             e.printStackTrace();
+        }
+    }
+
+    public String sendMessage(String alias, String url, Calendar expireDate) throws IOException{
+        if (outputStream == null) {
+            throw new IOException("outputstream is null");
+        }
+
+        JSONObject msg = new JSONObject();
+        msg.put("type", "db-insert");
+        msg.put("alias", alias);
+        msg.put("url", url);
+        msg.put("expires", DatabaseAdaper.toSqlDate(expireDate));
+        
+        outputStream.writeObject(msg);
+
+        Object o = null;
+        try {
+            logger.debug("reading after sending " + msg.getString("type"));
+            o = inputStream.readObject();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        if(o instanceof String){
+            return (String) o;
+        }
+        else{
+            return "Empty response";
         }
     }
 
