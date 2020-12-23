@@ -89,6 +89,15 @@ public class ReplicaSender {
     }
 
     public void stopConnection(){
+        // Inform server to close this connection
+        JSONObject msg = new JSONObject();
+        msg.put("type", "cmd-close");
+        try {
+            outputStream.writeObject(msg);
+        } catch (IOException e1) {
+            logger.error("repsend: error inform server close", e1);
+        }
+
         try {
             inputStream.close();
             outputStream.close();
