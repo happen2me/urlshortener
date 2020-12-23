@@ -44,8 +44,7 @@ public class UrlShortener {
         }
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.YEAR, VALID_YEARS);
-        Date expirationDate = calendar.getTime();
-        dbAdapter.insertUrl(alias, url, expirationDate);
+        dbAdapter.insertUrl(alias, url, calendar);
         return alias;
     }
 

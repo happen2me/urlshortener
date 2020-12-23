@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.logging.log4j.LogManager;
@@ -15,16 +16,13 @@ import org.apache.logging.log4j.Logger;
 public class DatabaseAdaper {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private final static Logger logger = LogManager.getLogger(DatabaseAdaper.class.getName());
-
-
     private Connection connection;
     private final static String urlTableName = "URL";
-
     private final static String insertSQL = "INSERT INTO URL(Hash, URL, ExpirationDate) VALUES(?, ?, ?)";
     private PreparedStatement insertQuery;
-
     private final static String readSQL = "SELECT * FROM " + urlTableName + " WHERE Hash=?";
     private PreparedStatement readQuery;
+    
 
     public DatabaseAdaper(String dbLocation) throws SQLException {
         this.connection = DriverManager.getConnection(dbLocation);
@@ -56,7 +54,7 @@ public class DatabaseAdaper {
         }
     }
 
-    public void insertUrl(String alias, String url, Date expirationDate) {
+    public void insertUrl(String alias, String url, Calendar expirationDate) {
         try {
             insertQuery.setString(1, alias);
             insertQuery.setString(2, url);
@@ -75,9 +73,9 @@ public class DatabaseAdaper {
         logger.debug("Database: successfully inserted" + alias+" : " + url);
     }
 
-    private String toSqlDate(Date date){
+    private String toSqlDate(Calendar date){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        return sdf.format(date);
+        return sdf.format(date.getTime());
     }
 
     /**
