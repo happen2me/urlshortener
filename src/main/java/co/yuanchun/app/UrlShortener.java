@@ -35,18 +35,17 @@ public class UrlShortener {
         dbAdapter.initializeDb();
     }
 
-    public String insertUrl(String url, Integer userID) {
+    public String insertUrl(String url) {
         String alias = generateAlias(url);
         String urlFound = dbAdapter.findAlias(alias);
         if(urlFound != ""){ // modify url if duplicated
             url = increaseUrl(urlFound);
-            return insertUrl(url, userID); // iterate increamentally through all other collisions to find ununsed hash
+            return insertUrl(url); // iterate increamentally through all other collisions to find ununsed hash
         }
         Calendar calendar = Calendar.getInstance();
-        Date creationDate = calendar.getTime();
         calendar.add(Calendar.YEAR, VALID_YEARS);
         Date expirationDate = calendar.getTime();
-        dbAdapter.insertUrl(alias, url, creationDate, expirationDate, userID);
+        dbAdapter.insertUrl(alias, url, expirationDate);
         return alias;
     }
 

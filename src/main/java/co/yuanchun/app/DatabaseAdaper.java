@@ -6,11 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
-import javax.annotation.Nullable;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,10 +19,12 @@ public class DatabaseAdaper {
 
     private Connection connection;
     private final static String urlTableName = "URL";
-    private final static String userTableName = "User";
 
-    private final static String insertSQL = "INSERT INTO URL(Hash, OriginalURL, CreationDate, ExpirationDate, UserID) VALUES(?, ?, ?, ?, ?)";
+    private final static String insertSQL = "INSERT INTO URL(Hash, URL, ExpirationDate) VALUES(?, ?, ?)";
     private PreparedStatement insertQuery;
+
+    private final static String readSQL = "SELECT * FROM " + urlTableName + " WHERE Hash=?";
+    private PreparedStatement readQuery;
 
     public DatabaseAdaper(String dbLocation) throws SQLException {
         this.connection = DriverManager.getConnection(dbLocation);
@@ -37,20 +36,11 @@ public class DatabaseAdaper {
             statement.setQueryTimeout(30); // set timeout to 30 sec.
             String urlSchemaSql = "CREATE TABLE IF NOT EXISTS " + urlTableName +
                 " (Hash VARCHAR(16) PRIMARY KEY NOT NULL," +
-                "OriginalURL VARCHAR(512) NOT NULL," + 
-                "CreationDate DATETIME NOT NULL," + 
-                "ExpirationDate DATETIME NOT NULL," + 
-                "UserID INT);";
-            String userSchemaSql = "CREATE TABLE IF NOT EXISTS " + userTableName +
-                " (UserID INT PRIMARY KEY NOT NULL," +
-                "Name VARCHAR(20)," + 
-                "Email VARCHAR(32)," + 
-                "CreationDate DATETIME," +
-                "LastLogin DATETIME);";
+                "URL VARCHAR(512) NOT NULL," +
+                "ExpirationDate DATETIME NOT NULL);";
             String dateIndexSql = "CREATE INDEX IF NOT EXISTS expire_idx " +
                 "ON " + urlTableName + " (ExpirationDate)";
             statement.executeUpdate(urlSchemaSql);
-            statement.execute(userSchemaSql);
             statement.execute(dateIndexSql);
             statement.close();
         } catch (SQLException e) {            
@@ -60,29 +50,18 @@ public class DatabaseAdaper {
         // setup
         try {
             insertQuery = connection.prepareStatement(insertSQL);
+            readQuery = connection.prepareStatement(readSQL);
         } catch (SQLException e) {
             logger.error(e.getMessage());
         }
     }
 
-    public void insertUrl(String alias, String url, Date creationDate, 
-        @Nullable Date expirationDate, @Nullable Integer userID) {
+    public void insertUrl(String alias, String url, Date expirationDate) {
         try {
-            
-            // Statement statement = connection.createStatement();
-            // String insertSql = "INSERT INTO " + urlTableName +
-            //     "(Hash, OriginalURL, CreationDate, ExpirationDate, UserID) " +
-            //     String.format("VALUES('%s', '%s', '%s', '%s', %s);", alias, url, toSqlDate(creationDate), 
-            //         expirationDate==null ? "NULL" : toSqlDate(expirationDate),
-            //         userID==null ? "NULL" : userID);
-            // statement.executeUpdate(insertSql);
             insertQuery.setString(1, alias);
             insertQuery.setString(2, url);
-            insertQuery.setString(3, toSqlDate(creationDate));
-            insertQuery.setString(4, toSqlDate(expirationDate));
-            insertQuery.setNull(5, java.sql.Types.INTEGER);
-        }
-        catch (SQLException e) {
+            insertQuery.setString(3, toSqlDate(expirationDate));
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         try {
@@ -91,8 +70,9 @@ public class DatabaseAdaper {
               logger.error("No record was updated.");
             }
         } catch (SQLException e) {
-            logger.debug(e.getMessage());
+            logger.error(e.getMessage());
         }
+        logger.debug("Database: successfully inserted" + alias+" : " + url);
     }
 
     private String toSqlDate(Date date){
@@ -108,18 +88,23 @@ public class DatabaseAdaper {
     public String findAlias(String alias){
         String url = "";
         try {
-            Statement statement = connection.createStatement();
-            String querySql = "SELECT OriginalURL " +
-            "FROM " + urlTableName + " " +
-            "WHERE Hash = '" + alias + "';";
-            ResultSet result = statement.executeQuery(querySql);
-            while (result.next()) {
-                url = result.getString("OriginalURL");
+            readQuery.setString(1, alias);
+        } catch (SQLException e1) {
+            logger.error(e1.getMessage());
+            throw new RuntimeException("Could not prepare read query.");
+        }
+        try {
+            ResultSet result = readQuery.executeQuery();
+            if (result.next()) {
+                url = result.getString("URL");
+                logger.info("Found url: " + url + " for alias " + alias);
+            }
+            else{
+                logger.info("Alias " + alias + " not found");
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        logger.info("Found url: " + url + " for alias " + alias);
+            logger.error(e.getMessage());
+        }        
         return url;
     }
 

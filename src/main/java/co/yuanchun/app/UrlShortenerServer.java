@@ -100,7 +100,7 @@ public class UrlShortenerServer {
                 return "";
             }
             logger.debug("Request body is:" + requestString);
-            String alias = shortener.insertUrl(requestString, null);
+            String alias = shortener.insertUrl(requestString);
             return alias;
         }
 
