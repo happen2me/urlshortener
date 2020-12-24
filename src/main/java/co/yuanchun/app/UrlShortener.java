@@ -5,7 +5,6 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.Base64;
 import java.util.Calendar;
-import java.util.Date;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,7 +22,7 @@ public class UrlShortener {
     final int ALIAS_LENGTH = 6;
     final String HASH_METHOD = "MD5";
     final int VALID_YEARS = 5;
-    DatabaseAdaper dbAdapter;
+    DatabaseAdaper dbAdapter = null;
 
     public UrlShortener(String databasePath) {
         try {
@@ -92,6 +91,13 @@ public class UrlShortener {
         byte[] hash = md5.digest(url.getBytes());
         String key = Base64.getEncoder().encodeToString(hash);
         return key.substring(0, ALIAS_LENGTH);
+    }
+
+    public DatabaseAdaper getDatabaseAdapter(){
+        if (dbAdapter == null) {
+            throw new NullPointerException("Database is not instantiated yet");
+        }
+        return dbAdapter;
     }
 
 
