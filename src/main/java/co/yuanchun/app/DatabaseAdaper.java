@@ -84,6 +84,10 @@ public class DatabaseAdaper {
         insertUrl(alias, url, expireDateString);
     }
 
+    public void insertUrl(AliasRecord record){
+        insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
+    }
+
     public static String toSqlDate(Calendar date){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return sdf.format(date.getTime());
