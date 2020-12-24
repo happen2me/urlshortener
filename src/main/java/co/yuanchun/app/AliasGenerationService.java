@@ -30,13 +30,12 @@ public class AliasGenerationService {
 
     @Deprecated
     public String insertUrl(String url) {
-        String alias = generateAlias(url);
-        Calendar expires = generateExpireDateBasedCurrentTime();
-        dbAdapter.insertUrl(alias, url, expires);
-        return alias;
+        AliasRecord record = generateAlias(url);
+        dbAdapter.insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
+        return record.getAlias();
     }
 
-    public String generateAlias(String url){
+    public AliasRecord generateAlias(String url){
         String alias = generateHash(url);
         String urlFound = dbAdapter.findAlias(alias);
         while(urlFound != ""){ // modify url if duplicated
@@ -44,7 +43,8 @@ public class AliasGenerationService {
             alias = generateHash(url); // iterate increamentally through all other collisions to find ununsed hash
             urlFound = dbAdapter.findAlias(alias);
         }
-        return alias;
+        Calendar expires = generateExpireDateBasedCurrentTime();
+        return new AliasRecord(alias, url, expires);
     }
 
     public static Calendar generateExpireDateBasedCurrentTime(){

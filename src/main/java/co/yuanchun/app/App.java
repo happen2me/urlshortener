@@ -16,6 +16,7 @@ import org.apache.logging.log4j.core.config.ConfigurationFactory;
 
 import co.yuanchun.app.clientConnectionHandling.ClientGateway;
 import co.yuanchun.app.logging.Log4JConfiguration;
+import co.yuanchun.app.replication.ServerIdentifier;
 
 public class App {
     private static final Logger logger = LogManager.getLogger(App.class.getName());
@@ -24,7 +25,8 @@ public class App {
     private int port;
     private String ip;
     private String databaseFilePath;
-    private List<String> serverAddresses;
+    private List<ServerIdentifier> serverAddresses;
+    private int replicationPort;
 
     public static void main(String[] args) {
         App server = new App(args);
@@ -32,7 +34,7 @@ public class App {
     }
 
     private void run() {
-        ClientGateway server = new ClientGateway(databaseFilePath, ip, port, 100);
+        ClientGateway server = new ClientGateway(databaseFilePath, ip, port, 100, serverAddresses, replicationPort);
         server.start();
       }
 
@@ -52,6 +54,7 @@ public class App {
         options.addRequiredOption( "p", "port", true, "the port to use for the client server.");
         options.addRequiredOption( "i", "ip", true, "the ip address to use for the client server");
         options.addRequiredOption( "d", "database", true, "the file path to the sqlite database file");
+        options.addRequiredOption( "l", "replicationListenPort", true, "the port to listen to incoming replications");
         options.addOption("s", "servers", true, "the addresses of the other servers to connect to");
     
         HelpFormatter formatter = new HelpFormatter();
@@ -61,10 +64,18 @@ public class App {
           port = Integer.parseInt(line.getOptionValue("port"));
           ip = line.getOptionValue("ip");
           databaseFilePath = line.getOptionValue("database");
+          replicationPort = Integer.parseInt(line.getOptionValue("replicationListenPort"));
     
           if (line.hasOption("servers")) {
             String serverList = line.getOptionValue("servers");
-            serverAddresses = Arrays.asList(serverList.split(","));
+            serverAddresses = new ArrayList<>();
+            List<String> serverStrings = Arrays.asList(serverList.split(","));
+            for (String serverString : serverStrings) {
+              String[] values = serverString.split(":");
+              String ip = values[0];
+              int port = Integer.parseInt(values[1]);
+              serverAddresses.add(new ServerIdentifier(ip, port));
+            }
           } else {
             serverAddresses = new ArrayList<>();
           }

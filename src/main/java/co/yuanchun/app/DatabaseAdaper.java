@@ -106,10 +106,10 @@ public class DatabaseAdaper {
             ResultSet result = readQuery.executeQuery();
             if (result.next()) {
                 url = result.getString("URL");
-                logger.info("Found url: " + url + " for alias " + alias);
+                logger.info("Database: found url: " + url + " for alias " + alias);
             }
             else{
-                logger.info("Alias " + alias + " not found");
+                logger.info("Database: Alias " + alias + " not found");
             }
         } catch (SQLException e) {
             logger.error(e.getMessage());

@@ -23,6 +23,13 @@ public class Node {
     private ReplicationService replicationService;
     
 
+    /**
+     * Constructor of Node, each node is an abstract of a single physical server.
+     * Please call initializeServices() after construction
+     * @param databasePath
+     * @param serverList
+     * @param replicationListenningPort
+     */
     public Node(String databasePath, List<ServerIdentifier> serverList, int replicationListenningPort){
         this.serverList = serverList;
         this.replicationListenningPort = replicationListenningPort;
@@ -45,14 +52,13 @@ public class Node {
      */
     public String addUrl(String url){
         // generate alias with AliasGenerationService
-        String alias = aliasGenerationService.generateAlias(url);
-        Calendar expirationDate = AliasGenerationService.generateExpireDateBasedCurrentTime();
+        AliasRecord record = aliasGenerationService.generateAlias(url);
         // save to local database
-        dbAdapter.insertUrl(alias, url, expirationDate);
+        dbAdapter.insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
         // replciate to remote database once it's locally saved
         // TODO: make it unblock
-        replicationService.propagateAlias(alias, url, expirationDate);
-        return alias;
+        replicationService.propagateAlias(record.getAlias(), record.getUrl(), record.getExpires());
+        return record.getAlias();
     }
 
     public String findAlias(String alias){

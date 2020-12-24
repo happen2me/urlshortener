@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.net.InetSocketAddress;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -19,12 +20,15 @@ import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.AliasGenerationService;
 import co.yuanchun.app.DatabaseAdaper;
+import co.yuanchun.app.Node;
+import co.yuanchun.app.replication.ServerIdentifier;
 
 /**
  * Hello world!
  *
  */
 public class ClientGateway {
+    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private static final Logger logger = LogManager.getLogger(ClientGateway.class.getName());
     private HttpServer server;
     private ExecutorService threadPoolExecutor;
@@ -32,7 +36,8 @@ public class ClientGateway {
     private int port;
     private String ip;
 
-    public ClientGateway(String databasePath, String ip, int port, int backlog) {
+    public ClientGateway(String databasePath, String ip, int port, int backlog, 
+        List<ServerIdentifier> serverList, int replicationListenningPort) {
         this.port = port;
         this.ip = ip;
         try {
@@ -43,7 +48,7 @@ public class ClientGateway {
         threadPoolExecutor = Executors.newFixedThreadPool(20);
         server.setExecutor(threadPoolExecutor);
 
-        server.createContext("/", new MyHttpHandler(databasePath));
+        server.createContext("/", new MyHttpHandler(databasePath, serverList,replicationListenningPort));
     }
 
     public void start() {
@@ -57,29 +62,22 @@ public class ClientGateway {
     }
 
     private static class MyHttpHandler implements HttpHandler {
-        private AliasGenerationService shortener;
-        private DatabaseAdaper database;
+        private Node node;
 
-        public MyHttpHandler(String databasePath) {
-            try {
-                database = new DatabaseAdaper("jdbc:sqlite:" + databasePath);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            database.initializeDb();
-            shortener = new AliasGenerationService(database);
+        public MyHttpHandler(String databasePath, List<ServerIdentifier> serverList, int replicationListenningPort) {
+            node = new Node(databasePath, serverList, replicationListenningPort);
+            node.initializeServices();
         }
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            logger.info("handling");
             String requestParams = null;
             if("GET".equals(exchange.getRequestMethod())){
                 requestParams = handleGET(exchange);
                 logger.debug(requestParams.toString());
             }
             else if("POST".equals(exchange.getRequestMethod())){
-                requestParams = handlePostRequest(exchange);
+                requestParams = handlePost(exchange);                
             }
             handleResponse(exchange, requestParams);
         }
@@ -93,15 +91,16 @@ public class ClientGateway {
               return "";
             }
             alias = alias.substring(1);  // Removes the leading slash
-            logger.info(String.format("RECEIVED_CLIENT_REQUEST(GET,%s)", alias));
-                String url = database.findAlias(alias);        
-                if (url == "") {
-                    logger.info("Queried URL not found");
-                }
-                return url;
+            referenceLogger.info(String.format("RECEIVED_CLIENT_REQUEST(GET,%s)", alias));
+            String url = node.findAlias(alias);        
+            if (url == "") {
+                logger.info("Queried URL not found");
+            }
+            logger.info("ClientGateway: found url " + url);
+            return url;
           }
 
-        private String handlePostRequest(HttpExchange exchange){
+        private String handlePost(HttpExchange exchange){
             String requestString = null;
             try (InputStream requestStream = exchange.getRequestBody();) {
                 requestString = tranlateInputStream(requestStream);
@@ -109,8 +108,9 @@ public class ClientGateway {
                 e.printStackTrace();
                 return "";
             }
-            logger.debug("Request body is:" + requestString);
-            String alias = shortener.insertUrl(requestString);
+            referenceLogger.info("RECEIVED_CLIENT_REQUEST(<ID>,POST, " + requestString + ")");
+            String alias = node.addUrl(requestString);
+            logger.debug("ClientGateway: alias is " + alias);
             return alias;
         }
 
@@ -130,12 +130,26 @@ public class ClientGateway {
         }
         
         private void handleResponse(HttpExchange exchange, String response) throws IOException {
-            OutputStream outputStream = exchange.getResponseBody();
-            exchange.sendResponseHeaders(200, response.length());
-            outputStream.write(response.getBytes());
-            outputStream.flush();
-            outputStream.close();
+            if ("GET".equals(exchange.getRequestMethod())) {
+                if (response == "") {
+                    exchange.sendResponseHeaders(404, 0);
+                }
+                else{
+                    exchange.sendResponseHeaders(200, response.getBytes().length);
+                    OutputStream outputStream = exchange.getResponseBody();
+                    outputStream.write(response.getBytes());
+                    outputStream.flush();
+                    outputStream.close();
+                    referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,GET,%s)", 0, response));
+                }
+            }
+            else if("POST".equals(exchange.getRequestMethod())){
+                exchange.sendResponseHeaders(200, response.getBytes().length);
+                OutputStream out = exchange.getResponseBody();
+                out.write(response.getBytes());
+                out.close();
+                referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,POST,%s)", 0, response));
+            }
         }
-
     }
 }
