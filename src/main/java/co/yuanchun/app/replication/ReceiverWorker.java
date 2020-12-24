@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import co.yuanchun.app.DatabaseAdaper;
-import co.yuanchun.app.UrlShortener;
+import co.yuanchun.app.AliasGenerationService;
 
 public class ReceiverWorker implements Runnable{
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
@@ -39,6 +39,7 @@ public class ReceiverWorker implements Runnable{
                 } catch (ClassNotFoundException e) {
                     logger.error("RcvWrk: can't read object from stream. ", e);
                 }
+                // TODO: remove string part
                 if(o instanceof String){
                     String msg = (String) o;
                     if(msg.equals("stop")){
@@ -54,14 +55,16 @@ public class ReceiverWorker implements Runnable{
                 else if(o instanceof JSONObject){
                     logger.debug("rceived JSON");
                     JSONObject record = (JSONObject) o;
-                    if (record.getString("type").equals("db-insert")) {
+                    if (record.getString("type").equals(MessageType.INSERT_REQUEST)) {
                         String alias = record.getString("alias");
                         String url = record.getString("url");
                         String expirationDate = record.getString("expires");
                         database.insertUrl(alias, url, expirationDate);
-                        output.writeObject("wrote to db");
+                        JSONObject response = new JSONObject();
+                        response.put("type", MessageType.INSERT_CONFIRMATION);
+                        output.writeObject(response);
                     }
-                    else if(record.getString("type").equals("cmd-close")){ 
+                    else if(record.getString("type").equals(MessageType.CMD_CLOSE)){ 
                         // Close socket connection to client
                         stop();
                     }

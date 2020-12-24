@@ -14,37 +14,43 @@ import org.apache.logging.log4j.Logger;
  * generating, inserting, finding url:alias pairs and collision
  * detection.
  */
-public class UrlShortener {
+public class AliasGenerationService {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private static final Logger logger = LogManager.getLogger(UrlShortener.class.getName());
+    private static final Logger logger = LogManager.getLogger(AliasGenerationService.class.getName());
 
-    final String DB_LOC_PREFIX = "jdbc:sqlite:";
-    final int ALIAS_LENGTH = 6;
-    final String HASH_METHOD = "MD5";
-    final int VALID_YEARS = 5;
+    final static String DB_LOC_PREFIX = "jdbc:sqlite:";
+    final static int ALIAS_LENGTH = 6;
+    final static String HASH_METHOD = "MD5";
+    final static int VALID_YEARS = 5;
     DatabaseAdaper dbAdapter = null;
 
-    public UrlShortener(String databasePath) {
-        try {
-            dbAdapter = new DatabaseAdaper(DB_LOC_PREFIX + databasePath);
-        } catch (SQLException e) {
-            System.err.println("Failed to connect to data base.");
-            e.printStackTrace();
-        }
-        dbAdapter.initializeDb();
+    public AliasGenerationService(DatabaseAdaper databaseAdaper) {
+        this.dbAdapter = databaseAdaper;
     }
 
+    @Deprecated
     public String insertUrl(String url) {
         String alias = generateAlias(url);
+        Calendar expires = generateExpireDateBasedCurrentTime();
+        dbAdapter.insertUrl(alias, url, expires);
+        return alias;
+    }
+
+    public String generateAlias(String url){
+        String alias = generateHash(url);
         String urlFound = dbAdapter.findAlias(alias);
-        if(urlFound != ""){ // modify url if duplicated
+        while(urlFound != ""){ // modify url if duplicated
             url = increaseUrl(urlFound);
-            return insertUrl(url); // iterate increamentally through all other collisions to find ununsed hash
+            alias = generateHash(url); // iterate increamentally through all other collisions to find ununsed hash
+            urlFound = dbAdapter.findAlias(alias);
         }
+        return alias;
+    }
+
+    public static Calendar generateExpireDateBasedCurrentTime(){
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.YEAR, VALID_YEARS);
-        dbAdapter.insertUrl(alias, url, calendar);
-        return alias;
+        return calendar;
     }
 
     private String increaseUrl(String url){
@@ -54,18 +60,18 @@ public class UrlShortener {
             try {
                 curNo = Integer.parseInt(splits[0]);
             } catch (Exception e) {
-                System.err.println("Failed to parse url: " + url + " from database.");
+                logger.error("Failed to parse url: " + url + " from database.");
             }
             url = Integer.toString(curNo+1) + " " + splits[1];                
         }
         else{ // has no leading numbers, namely the first collision
             url = Integer.toString(0) + " " + url;
         }
-        System.out.println("concatenated url: " + url);
+        logger.debug("concatenated url: " + url);
         return url;
     }
 
-    private String stripeDuplicateUrl(String url){
+    public static String stripeDuplicateUrl(String url){
         String[] splits = url.split(" ", 2); // url is "No[space]url" or "url"
         if(splits.length > 1){
             url = splits[1];
@@ -73,18 +79,12 @@ public class UrlShortener {
         return url;
     }
 
-    public String findAlias(String alias){
-        String urlFound = dbAdapter.findAlias(alias);
-        String url = stripeDuplicateUrl(urlFound);
-        return url;
-    }
-
-    private String generateAlias(String url) {
+    private String generateHash(String url) {
         MessageDigest md5;
         try {
             md5 = MessageDigest.getInstance(HASH_METHOD);
         } catch (NoSuchAlgorithmException e) {
-            System.err.println("Hash method " + HASH_METHOD + " not found.");
+            logger.error("Hash method " + HASH_METHOD + " not found.");
             e.printStackTrace();
             return "";
         }

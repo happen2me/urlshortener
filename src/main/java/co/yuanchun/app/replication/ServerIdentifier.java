@@ -24,5 +24,27 @@ public class ServerIdentifier {
     public void setPort(int port) {
         this.port = port;
     }
+
+    @Override
+    public boolean equals(Object obj){
+        if (obj == null) {
+            return false;
+        }
+
+        if (obj.getClass() != this.getClass()) {
+            return false;
+        }
+
+        final ServerIdentifier other = (ServerIdentifier) obj;
+        if ((this.ip == null) ? (other.ip != null) : !this.ip.equals(other.ip)) {
+            return false;
+        }
+
+        if (this.port != other.port) {
+            return false;
+        }
+
+        return true;
+    }
     
 }

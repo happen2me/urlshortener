@@ -1,8 +1,13 @@
 package co.yuanchun.app.replication;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,17 +46,63 @@ public class ReplicationService {
         // TODO: implement asyncronous stop method
     }
 
-    public void addAlias(String alias, String url, Calendar expires) {
+    /**
+     * Propagate an alias record to all other servers.
+     * This method will block until it gets response from all other
+     * servers.
+     * @param alias
+     * @param url
+     * @param expires
+     * @return whether replciations to all servers succeeded
+     */
+    public boolean propagateAlias(String alias, String url, Calendar expires) {
+        List<FutureTask<Boolean>> tasks = new ArrayList<>();
         for (ServerIdentifier serverIdentifier : serverList) {
+            FutureTask<Boolean> t = new FutureTask<>(new PropagateTask(serverIdentifier, alias, url, expires));
+            tasks.add(t);
+        }
+        boolean allSucceeded = true;
+        for (FutureTask<Boolean> futureTask : tasks) {
+            boolean replicateSucceeed;
+            try {
+                replicateSucceeed = futureTask.get();
+                if (!replicateSucceeed) {
+                    allSucceeded = false;
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                allSucceeded = false;
+                logger.error("Error checking replication result", e);
+            }            
+        }
+        return allSucceeded;
+    }
+
+    private class PropagateTask implements Callable<Boolean>{
+        private ServerIdentifier serverIdentifier;
+        private String alias;
+        private String url;
+        private Calendar expires;
+
+        public PropagateTask(ServerIdentifier serverIdentifier, String alias, String url, Calendar expires) {
+            this.serverIdentifier = serverIdentifier;
+            this.alias = alias;
+            this.url = url;
+            this.expires = expires;
+        }
+
+        @Override
+        public Boolean call() throws Exception {
             String ip = serverIdentifier.getIp();
             int port = serverIdentifier.getPort();
             replicaSender.startConnection(ip, port);
+            boolean succeeded = false;
             try {
-                replicaSender.sendMessage(alias, url, expires);
+                succeeded = replicaSender.sendMessage(alias, url, expires);
             } catch (IOException e) {
-                
+                logger.error(e.getMessage());
             }
             replicaSender.stopConnection();
-        }
-    }    
+            return succeeded;           
+        }      
+    }
 }

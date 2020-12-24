@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Calendar;
+import java.util.concurrent.Future;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,13 +41,13 @@ public class ReplicaSender {
         }
     }
 
-    public String sendMessage(String alias, String url, Calendar expireDate) throws IOException{
+    public boolean sendMessage(String alias, String url, Calendar expireDate) throws IOException{
         if (outputStream == null) {
             throw new IOException("outputstream is null");
         }
 
         JSONObject msg = new JSONObject();
-        msg.put("type", "db-insert");
+        msg.put("type", MessageType.INSERT_REQUEST);
         msg.put("alias", alias);
         msg.put("url", url);
         msg.put("expires", DatabaseAdaper.toSqlDate(expireDate));
@@ -60,14 +61,21 @@ public class ReplicaSender {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        if(o instanceof String){
-            return (String) o;
+        if(o instanceof JSONObject){
+            JSONObject response = (JSONObject) o;
+            if (response.getString("type").equals(MessageType.INSERT_CONFIRMATION)){
+                return true;
+            }
+            else{
+                return false;
+            }
         }
         else{
-            return "Empty response";
+            return false;
         }
     }
 
+    @Deprecated
     public String sendMessage(String msg) throws IOException {
         if (outputStream == null) {
             throw new IOException("outputstream is null");

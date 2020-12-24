@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.net.InetSocketAddress;
+import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,22 +17,22 @@ import com.sun.net.httpserver.HttpServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import co.yuanchun.app.UrlShortener;
+import co.yuanchun.app.AliasGenerationService;
+import co.yuanchun.app.DatabaseAdaper;
 
 /**
  * Hello world!
  *
  */
-public class UrlShortenerServer {
-    private static final Logger logger = LogManager.getLogger(UrlShortenerServer.class.getName());
+public class ClientGateway {
+    private static final Logger logger = LogManager.getLogger(ClientGateway.class.getName());
     private HttpServer server;
     private ExecutorService threadPoolExecutor;
-    
 
     private int port;
     private String ip;
 
-    public UrlShortenerServer(String databasePath, String ip, int port, int backlog){
+    public ClientGateway(String databasePath, String ip, int port, int backlog) {
         this.port = port;
         this.ip = ip;
         try {
@@ -45,21 +46,28 @@ public class UrlShortenerServer {
         server.createContext("/", new MyHttpHandler(databasePath));
     }
 
-    public void start(){
+    public void start() {
         logger.info("Starting server at " + ip + ":" + port);
         server.start();
     }
 
-    public void stop(){
+    public void stop() {
         server.stop(1);
         threadPoolExecutor.shutdown();
     }
 
     private static class MyHttpHandler implements HttpHandler {
-        private UrlShortener shortener;
+        private AliasGenerationService shortener;
+        private DatabaseAdaper database;
 
         public MyHttpHandler(String databasePath) {
-            shortener = new UrlShortener(databasePath);
+            try {
+                database = new DatabaseAdaper("jdbc:sqlite:" + databasePath);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            database.initializeDb();
+            shortener = new AliasGenerationService(database);
         }
 
         @Override
@@ -86,7 +94,7 @@ public class UrlShortenerServer {
             }
             alias = alias.substring(1);  // Removes the leading slash
             logger.info(String.format("RECEIVED_CLIENT_REQUEST(GET,%s)", alias));
-                String url = shortener.findAlias(alias);        
+                String url = database.findAlias(alias);        
                 if (url == "") {
                     logger.info("Queried URL not found");
                 }
