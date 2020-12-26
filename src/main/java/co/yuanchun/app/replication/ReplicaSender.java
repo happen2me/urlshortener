@@ -52,7 +52,7 @@ public class ReplicaSender {
         msg.put("url", url);
         msg.put("expires", DatabaseAdaper.toSqlDate(expireDate));
         
-        outputStream.writeObject(msg);
+        outputStream.writeObject(msg.toString());
 
         Object o = null;
         try {
@@ -61,8 +61,15 @@ public class ReplicaSender {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        if(o instanceof JSONObject){
-            JSONObject response = (JSONObject) o;
+        if(o instanceof String){
+            String jsonString = (String) o;
+            JSONObject response = null;
+            try {
+                response = new JSONObject(jsonString);
+            } catch (Exception e) {
+                logger.error("Can't parse " + jsonString + " to json object.", e);
+                return false;
+            }
             if (response.getString("type").equals(MessageType.INSERT_CONFIRMATION)){
                 return true;
             }
@@ -101,7 +108,7 @@ public class ReplicaSender {
         JSONObject msg = new JSONObject();
         msg.put("type", "cmd-close");
         try {
-            outputStream.writeObject(msg);
+            outputStream.writeObject(msg.toString());
         } catch (IOException e1) {
             logger.error("repsend: error inform server close", e1);
         }
@@ -123,18 +130,18 @@ public class ReplicaSender {
     }
 
     // Test
-    public static void main(String[] args) {
-        ReplicaSender sender = new ReplicaSender();
-        int port_to_connect = Integer.parseInt(args[0]);
-        sender.startConnection("localhost", port_to_connect);
-        String response = "";
-        String response2 = "";
-        try {
-            response = sender.sendMessage("hello from sender");
-            response2 = sender.sendMessage("stop");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println("response: " + response + ", "+ response2);
-    }
+    // public static void main(String[] args) {
+    //     ReplicaSender sender = new ReplicaSender();
+    //     int port_to_connect = Integer.parseInt(args[0]);
+    //     sender.startConnection("localhost", port_to_connect);
+    //     String response = "";
+    //     String response2 = "";
+    //     try {
+    //         response = sender.sendMessage("hello from sender");
+    //         response2 = sender.sendMessage("stop");
+    //     } catch (IOException e) {
+    //         e.printStackTrace();
+    //     }
+    //     System.out.println("response: " + response + ", "+ response2);
+    // }
 }

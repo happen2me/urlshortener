@@ -57,23 +57,37 @@ public class ReplicationService {
      */
     public boolean propagateAlias(String alias, String url, Calendar expires) {
         List<FutureTask<Boolean>> tasks = new ArrayList<>();
-        for (ServerIdentifier serverIdentifier : serverList) {
-            FutureTask<Boolean> t = new FutureTask<>(new PropagateTask(serverIdentifier, alias, url, expires));
-            tasks.add(t);
-        }
         boolean allSucceeded = true;
-        for (FutureTask<Boolean> futureTask : tasks) {
-            boolean replicateSucceeed;
+        for (ServerIdentifier serverIdentifier : serverList) {
+            // FutureTask<Boolean> t = new FutureTask<>(new PropagateTask(serverIdentifier, alias, url, expires));
+            // tasks.add(t);
+            String ip = serverIdentifier.getIp();
+            int port = serverIdentifier.getPort();
+            replicaSender.startConnection(ip, port);
+            boolean succeeded = false;
             try {
-                replicateSucceeed = futureTask.get();
-                if (!replicateSucceeed) {
-                    allSucceeded = false;
-                }
-            } catch (InterruptedException | ExecutionException e) {
+                succeeded = replicaSender.sendMessage(alias, url, expires);
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
+            replicaSender.stopConnection();
+            if (!succeeded) {
                 allSucceeded = false;
-                logger.error("Error checking replication result", e);
-            }            
+            }
         }
+        // boolean allSucceeded = true;
+        // for (FutureTask<Boolean> futureTask : tasks) {
+        //     boolean replicateSucceeed;
+        //     try {
+        //         replicateSucceeed = futureTask.get();
+        //         if (!replicateSucceeed) {
+        //             allSucceeded = false;
+        //         }
+        //     } catch (InterruptedException | ExecutionException e) {
+        //         allSucceeded = false;
+        //         logger.error("Error checking replication result", e);
+        //     }            
+        // }
         return allSucceeded;
     }
 

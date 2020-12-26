@@ -29,7 +29,7 @@ import co.yuanchun.app.replication.ServerIdentifier;
  */
 public class ClientGateway {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private static final Logger logger = LogManager.getLogger(ClientGateway.class.getName());
+    private static final Logger logger = LogManager.getLogger(ClientGateway.class);
     private HttpServer server;
     private ExecutorService threadPoolExecutor;
 

@@ -43,3 +43,6 @@ hs_err_pid*
 
 # database file
 *.db
+
+# Java annotation processor (APT)
+.factorypath

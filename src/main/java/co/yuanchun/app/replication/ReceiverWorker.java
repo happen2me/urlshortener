@@ -39,22 +39,15 @@ public class ReceiverWorker implements Runnable{
                 } catch (ClassNotFoundException e) {
                     logger.error("RcvWrk: can't read object from stream. ", e);
                 }
-                // TODO: remove string part
+                // TODO: convert to bytes operation
                 if(o instanceof String){
-                    String msg = (String) o;
-                    if(msg.equals("stop")){
-                        output.writeObject("stopped");
-                        stop();
-                        logger.debug("worker rcver stopped");
+                    String jsonString = (String) o;
+                    JSONObject record = null;                
+                    try {
+                        record = new JSONObject(jsonString);
+                    } catch (Exception e) {
+                        logger.error("Can't parse string" + jsonString + " to json object", e);
                     }
-                    else{
-                        System.out.println("saving msg: " + msg);
-                        output.writeObject("hello client");;
-                    }
-                }
-                else if(o instanceof JSONObject){
-                    logger.debug("rceived JSON");
-                    JSONObject record = (JSONObject) o;
                     if (record.getString("type").equals(MessageType.INSERT_REQUEST)) {
                         String alias = record.getString("alias");
                         String url = record.getString("url");
@@ -62,7 +55,7 @@ public class ReceiverWorker implements Runnable{
                         database.insertUrl(alias, url, expirationDate);
                         JSONObject response = new JSONObject();
                         response.put("type", MessageType.INSERT_CONFIRMATION);
-                        output.writeObject(response);
+                        output.writeObject(response.toString());
                     }
                     else if(record.getString("type").equals(MessageType.CMD_CLOSE)){ 
                         // Close socket connection to client

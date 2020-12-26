@@ -2,7 +2,6 @@ package co.yuanchun.app;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.util.Base64;
 import java.util.Calendar;
 
