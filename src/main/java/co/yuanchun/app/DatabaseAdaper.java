@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 public class DatabaseAdaper {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private final static Logger logger = LogManager.getLogger(DatabaseAdaper.class.getName());
+    private final static Logger logger = LogManager.getLogger(DatabaseAdaper.class.getSimpleName());
     private Connection connection;
     private final static String urlTableName = "URL";
     private final static String insertSQL = "INSERT INTO URL(Hash, URL, ExpirationDate) VALUES(?, ?, ?)";

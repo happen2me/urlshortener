@@ -15,7 +15,7 @@ import co.yuanchun.app.AliasGenerationService;
 
 public class ReceiverWorker implements Runnable{
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private final static Logger logger = LogManager.getLogger(ReceiverWorker.class.getName());
+    private final static Logger logger = LogManager.getLogger(ReceiverWorker.class.getSimpleName());
 
     private Socket clientSocket = null;
     private boolean isStopped;

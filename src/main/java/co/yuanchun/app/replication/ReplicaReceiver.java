@@ -10,7 +10,7 @@ import org.apache.logging.log4j.Logger;
 import co.yuanchun.app.DatabaseAdaper;
 
 public class ReplicaReceiver implements Runnable {
-    private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getName());
+    private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getSimpleName());
 
     private int serverPort;
     private ServerSocket serverSocket;

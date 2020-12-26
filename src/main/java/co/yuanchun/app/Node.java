@@ -12,7 +12,7 @@ import co.yuanchun.app.replication.ServerIdentifier;
 
 public class Node {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private static final Logger logger = LogManager.getLogger(AliasGenerationService.class.getName());
+    private static final Logger logger = LogManager.getLogger(AliasGenerationService.class.getSimpleName());
 
     private static final String DB_LOC_PREFIX = "jdbc:sqlite:";
 

@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class AliasGenerationService {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private static final Logger logger = LogManager.getLogger(AliasGenerationService.class.getName());
+    private static final Logger logger = LogManager.getLogger(AliasGenerationService.class.getSimpleName());
 
     final static String DB_LOC_PREFIX = "jdbc:sqlite:";
     final static int ALIAS_LENGTH = 6;

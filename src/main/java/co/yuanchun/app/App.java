@@ -17,7 +17,7 @@ import co.yuanchun.app.clientConnectionHandling.ClientGateway;
 import co.yuanchun.app.replication.ServerIdentifier;
 
 public class App {
-    private static final Logger logger = LogManager.getLogger(App.class.getName());
+    private static final Logger logger = LogManager.getLogger(App.class.getSimpleName());
     private static final int ALIAS_LENGTH = 6;
 
     private int port;

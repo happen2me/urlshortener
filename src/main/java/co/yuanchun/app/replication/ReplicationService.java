@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 import co.yuanchun.app.DatabaseAdaper;
 
 public class ReplicationService {
-    private static final Logger logger = LogManager.getLogger(ReplicationService.class.getName());
+    private static final Logger logger = LogManager.getLogger(ReplicationService.class.getSimpleName());
 
     private DatabaseAdaper database;
     private List<ServerIdentifier> serverList;

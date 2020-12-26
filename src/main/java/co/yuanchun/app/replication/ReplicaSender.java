@@ -14,7 +14,7 @@ import org.json.JSONObject;
 import co.yuanchun.app.DatabaseAdaper;
 
 public class ReplicaSender {
-    private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getName());
+    private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getSimpleName());
     
     private Socket senderSocket;
     ObjectOutputStream outputStream = null;
