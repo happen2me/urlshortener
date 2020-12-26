@@ -46,3 +46,7 @@ hs_err_pid*
 
 # Java annotation processor (APT)
 .factorypath
+
+# eclipse
+.project
+.classpath
