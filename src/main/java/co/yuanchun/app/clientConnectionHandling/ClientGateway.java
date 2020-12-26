@@ -29,7 +29,7 @@ import co.yuanchun.app.replication.ServerIdentifier;
  */
 public class ClientGateway {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private static final Logger logger = LogManager.getLogger(ClientGateway.class);
+    private static final Logger logger = LogManager.getLogger(ClientGateway.class.getSimpleName());
     private HttpServer server;
     private ExecutorService threadPoolExecutor;
 
@@ -74,7 +74,7 @@ public class ClientGateway {
             String requestParams = null;
             if("GET".equals(exchange.getRequestMethod())){
                 requestParams = handleGET(exchange);
-                logger.debug(requestParams.toString());
+                logger.debug("GET result: " + requestParams.toString());
             }
             else if("POST".equals(exchange.getRequestMethod())){
                 requestParams = handlePost(exchange);                
@@ -96,7 +96,9 @@ public class ClientGateway {
             if (url == "") {
                 logger.info("Queried URL not found");
             }
-            logger.info("ClientGateway: found url " + url);
+            else{
+                logger.info("ClientGateway: found url " + url);
+            }            
             return url;
           }
 
@@ -135,13 +137,13 @@ public class ClientGateway {
                     exchange.sendResponseHeaders(404, 0);
                 }
                 else{
-                    exchange.sendResponseHeaders(200, response.getBytes().length);
-                    OutputStream outputStream = exchange.getResponseBody();
-                    outputStream.write(response.getBytes());
-                    outputStream.flush();
-                    outputStream.close();
-                    referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,GET,%s)", 0, response));
+                    exchange.sendResponseHeaders(200, response.getBytes().length);                                    
                 }
+                OutputStream outputStream = exchange.getResponseBody();   
+                outputStream.write(response.getBytes());
+                outputStream.flush();
+                outputStream.close();
+                referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,GET,%s)", 0, response));
             }
             else if("POST".equals(exchange.getRequestMethod())){
                 exchange.sendResponseHeaders(200, response.getBytes().length);
