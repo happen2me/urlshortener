@@ -18,9 +18,9 @@ public class DatabaseAdaper {
     private final static Logger logger = LogManager.getLogger(DatabaseAdaper.class.getSimpleName());
     private Connection connection;
     private final static String urlTableName = "URL";
-    private final static String insertSQL = "INSERT INTO URL(Hash, URL, ExpirationDate) VALUES(?, ?, ?)";
+    private final static String insertSQL = "INSERT INTO URL(alias, url, expires) VALUES(?, ?, ?)";
     private PreparedStatement insertQuery;
-    private final static String readSQL = "SELECT * FROM " + urlTableName + " WHERE Hash=?";
+    private final static String readSQL = "SELECT * FROM " + urlTableName + " WHERE alias=?";
     private PreparedStatement readQuery;
     
 
@@ -33,11 +33,11 @@ public class DatabaseAdaper {
             Statement statement = connection.createStatement();
             statement.setQueryTimeout(30); // set timeout to 30 sec.
             String urlSchemaSql = "CREATE TABLE IF NOT EXISTS " + urlTableName +
-                " (Hash VARCHAR(16) PRIMARY KEY NOT NULL," +
-                "URL VARCHAR(512) NOT NULL," +
-                "ExpirationDate DATETIME NOT NULL);";
+                " (alias VARCHAR(16) PRIMARY KEY NOT NULL," +
+                "url VARCHAR(512) NOT NULL," +
+                "expires DATETIME NOT NULL);";
             String dateIndexSql = "CREATE INDEX IF NOT EXISTS expire_idx " +
-                "ON " + urlTableName + " (ExpirationDate)";
+                "ON " + urlTableName + " (expires)";
             statement.executeUpdate(urlSchemaSql);
             statement.execute(dateIndexSql);
             statement.close();
@@ -109,7 +109,7 @@ public class DatabaseAdaper {
         try {
             ResultSet result = readQuery.executeQuery();
             if (result.next()) {
-                url = result.getString("URL");
+                url = result.getString("url");
                 logger.info("Database: found url: " + url + " for alias " + alias);
             }
             else{
