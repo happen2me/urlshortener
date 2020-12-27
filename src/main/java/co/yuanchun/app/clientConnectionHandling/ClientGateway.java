@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -48,7 +49,7 @@ public class ClientGateway {
         threadPoolExecutor = Executors.newFixedThreadPool(20);
         server.setExecutor(threadPoolExecutor);
 
-        server.createContext("/", new MyHttpHandler(databasePath, serverList,replicationListenningPort));
+        server.createContext("/", new ClientHttpHandler(databasePath, serverList,replicationListenningPort));
     }
 
     public void start() {
@@ -61,10 +62,11 @@ public class ClientGateway {
         threadPoolExecutor.shutdown();
     }
 
-    private static class MyHttpHandler implements HttpHandler {
+    private static class ClientHttpHandler implements HttpHandler {
         private Node node;
+        private static AtomicLong requestID = new AtomicLong(0);
 
-        public MyHttpHandler(String databasePath, List<ServerIdentifier> serverList, int replicationListenningPort) {
+        public ClientHttpHandler(String databasePath, List<ServerIdentifier> serverList, int replicationListenningPort) {
             node = new Node(databasePath, serverList, replicationListenningPort);
             node.initializeServices();
         }
@@ -83,6 +85,7 @@ public class ClientGateway {
         }
 
         private String handleGET(HttpExchange httpExchange) throws IOException {        
+            long id = requestID.incrementAndGet();
             String alias = httpExchange.getRequestURI().getPath();
             if (alias == null) {
               logger.error("GET requests should have an alias.");
@@ -91,7 +94,7 @@ public class ClientGateway {
               return "";
             }
             alias = alias.substring(1);  // Removes the leading slash
-            referenceLogger.info(String.format("RECEIVED_CLIENT_REQUEST(GET,%s)", alias));
+            referenceLogger.info(String.format("RECEIVED_CLIENT_REQUEST(%d, GET,%s)", id, alias));
             String url = node.findAlias(alias);        
             if (url == "") {
                 logger.info("Queried URL not found");
@@ -103,14 +106,15 @@ public class ClientGateway {
           }
 
         private String handlePost(HttpExchange exchange){
+            long id = requestID.incrementAndGet();
             String requestString = null;
             try (InputStream requestStream = exchange.getRequestBody();) {
                 requestString = tranlateInputStream(requestStream);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Can't parse POST request body", e);
                 return "";
             }
-            referenceLogger.info("RECEIVED_CLIENT_REQUEST(<ID>,POST, " + requestString + ")");
+            referenceLogger.info(String.format("RECEIVED_CLIENT_REQUEST(%d,POST,%s)", id, requestString));
             String alias = node.addUrl(requestString);
             logger.debug("ClientGateway: alias is " + alias);
             return alias;
@@ -132,6 +136,7 @@ public class ClientGateway {
         }
         
         private void handleResponse(HttpExchange exchange, String response) throws IOException {
+            long id = requestID.get();
             if ("GET".equals(exchange.getRequestMethod())) {
                 if (response == "") {
                     exchange.sendResponseHeaders(404, 0);
@@ -143,14 +148,15 @@ public class ClientGateway {
                 outputStream.write(response.getBytes());
                 outputStream.flush();
                 outputStream.close();
-                referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,GET,%s)", 0, response));
+                referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,GET,%s)", id, 
+                                                    response==""?"Not existing":response));
             }
             else if("POST".equals(exchange.getRequestMethod())){
                 exchange.sendResponseHeaders(200, response.getBytes().length);
                 OutputStream out = exchange.getResponseBody();
                 out.write(response.getBytes());
                 out.close();
-                referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,POST,%s)", 0, response));
+                referenceLogger.info(String.format("SEND_CLIENT_REPONSE(%d,POST,%s)", id, response));
             }
         }
     }

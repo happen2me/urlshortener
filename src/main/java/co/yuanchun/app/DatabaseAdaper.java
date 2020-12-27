@@ -76,7 +76,7 @@ public class DatabaseAdaper {
         } catch (SQLException e) {
             logger.error(e.getMessage());
         }
-        logger.debug("Database: successfully inserted" + alias+" : " + url);
+        logger.debug("Database: successfully inserted " + alias+" : " + url);
     }
 
     public void insertUrl(String alias, String url, Calendar expirationDate) {

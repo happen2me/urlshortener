@@ -74,10 +74,10 @@ public class ReplicaReceiver implements Runnable {
     }
 
     //test
-    public static void main(String[] args) {
-        int server_port = Integer.parseInt(args[0]);
-        ReplicaReceiver server = new ReplicaReceiver(server_port, null);
-        server.run();
-    }
+    // public static void main(String[] args) {
+    //     int server_port = Integer.parseInt(args[0]);
+    //     ReplicaReceiver server = new ReplicaReceiver(server_port, null);
+    //     server.run();
+    // }
     
 }

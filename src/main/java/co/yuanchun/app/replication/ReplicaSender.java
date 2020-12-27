@@ -14,17 +14,20 @@ import org.json.JSONObject;
 import co.yuanchun.app.DatabaseAdaper;
 
 public class ReplicaSender {
+    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getSimpleName());
     
     private Socket senderSocket;
     ObjectOutputStream outputStream = null;
     ObjectInputStream inputStream = null;
+    ServerIdentifier serverToConnect;
 
     public ReplicaSender() {
 
     }
 
     public void startConnection(String ip, int port) {
+        serverToConnect = new ServerIdentifier(ip, port);
         try {
             senderSocket = new Socket(ip, port);
         } catch (IOException e) {
@@ -43,11 +46,12 @@ public class ReplicaSender {
 
     public boolean sendMessage(String alias, String url, Calendar expireDate) throws IOException{
         if (outputStream == null) {
-            throw new IOException("outputstream is null");
+            throw new IOException("Outputstream is null");
         }
 
         JSONObject msg = new JSONObject();
         msg.put("type", MessageType.INSERT_REQUEST);
+        //msg.put("from", value)
         msg.put("alias", alias);
         msg.put("url", url);
         msg.put("expires", DatabaseAdaper.toSqlDate(expireDate));
@@ -71,6 +75,7 @@ public class ReplicaSender {
                 return false;
             }
             if (response.getString("type").equals(MessageType.INSERT_CONFIRMATION)){
+                referenceLogger.info(String.format(" REMOTE_WRITE_CONFIRMED(%s,%s) ", serverToConnect, alias));
                 return true;
             }
             else{

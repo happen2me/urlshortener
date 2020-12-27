@@ -46,5 +46,10 @@ public class ServerIdentifier {
 
         return true;
     }
+
+    @Override
+    public String toString(){
+        return ip + port;
+    }
     
 }

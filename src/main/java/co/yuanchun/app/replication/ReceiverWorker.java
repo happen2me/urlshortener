@@ -32,12 +32,13 @@ public class ReceiverWorker implements Runnable{
         try {
             ObjectInputStream input = new ObjectInputStream(clientSocket.getInputStream());
             ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
+            logger.debug("CLIENT SOCKET: " + clientSocket.toString());
             while (!isStopped()) {
                 Object o = null;
                 try {
                     o = input.readObject();
                 } catch (ClassNotFoundException e) {
-                    logger.error("RcvWrk: can't read object from stream. ", e);
+                    logger.error("can't read object from stream. ", e);
                 }
                 // TODO: convert to bytes operation
                 if(o instanceof String){
@@ -52,6 +53,8 @@ public class ReceiverWorker implements Runnable{
                         String alias = record.getString("alias");
                         String url = record.getString("url");
                         String expirationDate = record.getString("expires");
+                        // TODO: compose other_nodeID
+                        referenceLogger.info(String.format("REMOTE_WRITE_RECEIVED(%s,%s)", clientSocket.getInetAddress(), alias));
                         database.insertUrl(alias, url, expirationDate);
                         JSONObject response = new JSONObject();
                         response.put("type", MessageType.INSERT_CONFIRMATION);

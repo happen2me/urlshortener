@@ -21,28 +21,35 @@ public class AliasGenerationService {
     final static int ALIAS_LENGTH = 6;
     final static String HASH_METHOD = "MD5";
     final static int VALID_YEARS = 5;
-    DatabaseAdaper dbAdapter = null;
+    DatabaseAdaper database = null;
+    MessageDigest md5;
 
     public AliasGenerationService(DatabaseAdaper databaseAdaper) {
-        this.dbAdapter = databaseAdaper;
+        this.database = databaseAdaper;
+        try {
+            md5 = MessageDigest.getInstance(HASH_METHOD);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Needs" + HASH_METHOD + " to be installed.");
+        }
     }
 
     @Deprecated
     public String insertUrl(String url) {
         AliasRecord record = generateAlias(url);
-        dbAdapter.insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
+        database.insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
         return record.getAlias();
     }
 
     public AliasRecord generateAlias(String url){
         String alias = generateHash(url);
-        String urlFound = dbAdapter.findAlias(alias);
+        String urlFound = database.findAlias(alias);
         while(urlFound != ""){ // modify url if duplicated
             url = increaseUrl(urlFound);
             alias = generateHash(url); // iterate increamentally through all other collisions to find ununsed hash
-            urlFound = dbAdapter.findAlias(alias);
+            urlFound = database.findAlias(alias);
         }
         Calendar expires = generateExpireDateBasedCurrentTime();
+        referenceLogger.info(String.format("GENERATED_HASH_FOR_URL(%s,%s)", alias, url));
         return new AliasRecord(alias, url, expires);
     }
 
@@ -79,24 +86,16 @@ public class AliasGenerationService {
     }
 
     private String generateHash(String url) {
-        MessageDigest md5;
-        try {
-            md5 = MessageDigest.getInstance(HASH_METHOD);
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("Hash method " + HASH_METHOD + " not found.");
-            e.printStackTrace();
-            return "";
-        }
         byte[] hash = md5.digest(url.getBytes());
         String key = Base64.getEncoder().encodeToString(hash);
         return key.substring(0, ALIAS_LENGTH);
     }
 
     public DatabaseAdaper getDatabaseAdapter(){
-        if (dbAdapter == null) {
+        if (database == null) {
             throw new NullPointerException("Database is not instantiated yet");
         }
-        return dbAdapter;
+        return database;
     }
 
 

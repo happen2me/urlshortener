@@ -69,6 +69,10 @@ public class App {
               int port = Integer.parseInt(values[1]);
               serverAddresses.add(new ServerIdentifier(ip, port));
             }
+            logger.debug(serverAddresses.size() + " other nodes are detected:");
+            for (ServerIdentifier serverIdentifier : serverAddresses){
+              logger.debug("ip: " + serverIdentifier.getIp() + "; port: " + serverIdentifier.getPort());
+            }
           } else {
             serverAddresses = new ArrayList<>();
           }

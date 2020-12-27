@@ -19,7 +19,7 @@ public class Node {
     private DatabaseAdaper dbAdapter;
     private int replicationListenningPort;
     private List<ServerIdentifier> serverList; // servers to communicate to
-    private AliasGenerationService aliasGenerationService;    
+    private AliasGenerationService aliasGenerationService;
     private ReplicationService replicationService;
     
 
@@ -55,6 +55,7 @@ public class Node {
         AliasRecord record = aliasGenerationService.generateAlias(url);
         // save to local database
         dbAdapter.insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
+        referenceLogger.info(String.format("LOCAL_WRITE(%s) ", record.getAlias()));
         // replciate to remote database once it's locally saved
         // TODO: make it unblock
         replicationService.propagateAlias(record.getAlias(), record.getUrl(), record.getExpires());

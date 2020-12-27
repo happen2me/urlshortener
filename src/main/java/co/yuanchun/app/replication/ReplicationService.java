@@ -15,12 +15,14 @@ import org.apache.logging.log4j.Logger;
 import co.yuanchun.app.DatabaseAdaper;
 
 public class ReplicationService {
+    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private static final Logger logger = LogManager.getLogger(ReplicationService.class.getSimpleName());
 
     private DatabaseAdaper database;
     private List<ServerIdentifier> serverList;
     private Thread receiverThread;
     private ReplicaSender replicaSender;
+    private ServerIdentifier selfIdentifier;
 
     /**
      * To write to remote database
@@ -67,6 +69,7 @@ public class ReplicationService {
             boolean succeeded = false;
             try {
                 succeeded = replicaSender.sendMessage(alias, url, expires);
+                referenceLogger.info(String.format("REMOTE_WRITE_REQUESTED(%s,%s)", serverIdentifier, alias));
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
