@@ -40,30 +40,6 @@ public abstract class MessageReceiver{
         }
     }
 
-    // @Override
-    // public void run(){
-    //     synchronized(this){
-    //         this.runningThread = Thread.currentThread();
-    //     }
-    //     openServerSocket();
-    //     while(!isStopped()){
-    //         Socket clientSocket = null;
-    //         try {
-    //             logger.debug("Receiver started");
-    //             clientSocket = this.serverSocket.accept();
-    //         } catch (IOException e) {
-    //             if (isStopped()) {
-    //                 logger.debug("Replicator stopped");
-    //                 return;
-    //             }
-    //             throw new RuntimeException("Error accepting client connection", e);
-    //         }
-    //         new Thread(
-    //             new ReceiverWorker(clientSocket, database)
-    //         ).start();
-    //     }        
-    // }
-
 
     public synchronized boolean isStopped() {
         return this.isStopped;

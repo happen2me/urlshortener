@@ -1,16 +1,12 @@
 package co.yuanchun.app.replication;
 
-import java.io.IOException;
 import java.net.Socket;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.DatabaseAdaper;
 import co.yuanchun.app.communication.MessageReceiver;
 
 public class ReplicaReceiver extends MessageReceiver implements Runnable {
-    private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getSimpleName());
+    // private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getSimpleName());
 
     protected Thread runningThread;
     private DatabaseAdaper database;
@@ -25,32 +21,6 @@ public class ReplicaReceiver extends MessageReceiver implements Runnable {
     @Override
     public void run(){
         start();
-    }
-
-
-    @Override
-    public void start() {
-        synchronized(this){
-            this.runningThread = Thread.currentThread();
-        }
-        openServerSocket();
-        while(!isStopped()){
-            Socket clientSocket = null;
-            try {
-                logger.debug("Receiver started");
-                clientSocket = getServerSocket().accept();
-            } catch (IOException e) {
-                if (isStopped()) {
-                    logger.debug("Replicator stopped");
-                    return;
-                }
-                throw new RuntimeException("Error accepting client connection", e);
-            }
-            new Thread(
-                new ReplicaReceiverWorker(clientSocket, database)
-            ).start();
-        }
-
     }
 
     @Override
