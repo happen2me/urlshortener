@@ -4,14 +4,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Calendar;
+import java.sql.Timestamp;
 import java.util.concurrent.Future;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-
-import co.yuanchun.app.DatabaseAdaper;
 
 public class ReplicaSender {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
@@ -26,27 +24,24 @@ public class ReplicaSender {
 
     }
 
-    public void startConnection(String ip, int port) {
+    public void startConnection(String ip, int port) throws IOException{
         serverToConnect = new ServerIdentifier(ip, port);
-        try {
-            senderSocket = new Socket(ip, port);
-        } catch (IOException e) {
-            logger.error("Error occured when start connection");
-            e.printStackTrace();
-            return;
-        }
+
+        // might throw IOException
+        senderSocket = new Socket(ip, port);
+
         try {
             outputStream = new ObjectOutputStream(senderSocket.getOutputStream());
             inputStream = new ObjectInputStream(senderSocket.getInputStream());
         } catch (IOException e) {
-            logger.error("Error when get out/input stream");
-            e.printStackTrace();
+            logger.error("Error when get out/input stream", e);
         }
     }
 
-    public boolean sendMessage(String alias, String url, Calendar expireDate) throws IOException{
+    public boolean sendMessage(String alias, String url, Timestamp expireDate) throws IOException{
         if (outputStream == null) {
-            throw new IOException("Outputstream is null");
+            logger.error("Outputstream is null");
+            return false;
         }
 
         JSONObject msg = new JSONObject();
@@ -54,7 +49,7 @@ public class ReplicaSender {
         //msg.put("from", value)
         msg.put("alias", alias);
         msg.put("url", url);
-        msg.put("expires", DatabaseAdaper.toSqlDate(expireDate));
+        msg.put("expires", expireDate.toString());
         
         outputStream.writeObject(msg.toString());
 
@@ -90,7 +85,8 @@ public class ReplicaSender {
     @Deprecated
     public String sendMessage(String msg) throws IOException {
         if (outputStream == null) {
-            throw new IOException("outputstream is null");
+            logger.error("outputstream is null");
+            return "";
         }
         outputStream.writeObject(msg);
         Object o = null;
@@ -109,6 +105,15 @@ public class ReplicaSender {
     }
 
     public void stopConnection(){
+        if (outputStream == null) {            
+            try {
+                senderSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            logger.error("Output stream is null, probably connection hasn't been established. Socket closed.");
+            return;
+        }
         // Inform server to close this connection
         JSONObject msg = new JSONObject();
         msg.put("type", "cmd-close");

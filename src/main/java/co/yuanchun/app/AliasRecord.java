@@ -1,7 +1,6 @@
 package co.yuanchun.app;
 
-import java.util.Calendar;
-import java.util.Date;
+import java.sql.Timestamp;
 
 import com.opencsv.bean.CsvBindByName;
 
@@ -11,9 +10,9 @@ public class AliasRecord {
     @CsvBindByName
     private String url;
     @CsvBindByName
-    private Calendar expires;
+    private Timestamp expires;
 
-    public AliasRecord(String alias, String url, Calendar expires) {
+    public AliasRecord(String alias, String url, Timestamp expires) {
         this.alias = alias;
         this.url = url;
         this.expires = expires;
@@ -41,17 +40,16 @@ public class AliasRecord {
         this.url = url;
     }
 
-    public Calendar getExpires() {
+    public Timestamp getExpires() {
         return expires;
     }
 
-    public void setExpires(Calendar expires) {
+    public void setExpires(Timestamp expires) {
         this.expires = expires;
     }
 
     public void setExpires(String expires){
-        this.expires = Calendar.getInstance();
-        this.expires.setTime(new Date(expires));
+        this.expires = Timestamp.valueOf(expires);
     }
         
 }

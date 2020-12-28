@@ -2,8 +2,8 @@ package co.yuanchun.app;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.util.Base64;
-import java.util.Calendar;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,6 +21,7 @@ public class AliasGenerationService {
     final static int ALIAS_LENGTH = 6;
     final static String HASH_METHOD = "MD5";
     final static int VALID_YEARS = 5;
+    private static final int EXPIRES_AFTER = 1000 * 60 * 60 * 24 * 365 * VALID_YEARS;
     DatabaseAdaper database = null;
     MessageDigest md5;
 
@@ -52,14 +53,13 @@ public class AliasGenerationService {
             urlFound = database.findAlias(alias);
             unique++;
         }
-        Calendar expires = generateExpireDateBasedCurrentTime();        
+        Timestamp expires = generateExpireDateBasedCurrentTime();
         return new AliasRecord(alias, url, expires);
     }
 
-    public static Calendar generateExpireDateBasedCurrentTime(){
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.YEAR, VALID_YEARS);
-        return calendar;
+    public static Timestamp generateExpireDateBasedCurrentTime(){
+        Timestamp expires = new Timestamp(System.currentTimeMillis() + EXPIRES_AFTER);
+        return expires;
     }
 
     @Deprecated

@@ -1,8 +1,8 @@
 package co.yuanchun.app.replication;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -57,7 +57,7 @@ public class ReplicationService {
      * @param expires
      * @return whether replciations to all servers succeeded
      */
-    public boolean propagateAlias(String alias, String url, Calendar expires) {
+    public boolean propagateAlias(String alias, String url, Timestamp expires) {
         List<FutureTask<Boolean>> tasks = new ArrayList<>();
         boolean allSucceeded = true;
         for (ServerIdentifier serverIdentifier : serverList) {
@@ -65,7 +65,14 @@ public class ReplicationService {
             // tasks.add(t);
             String ip = serverIdentifier.getIp();
             int port = serverIdentifier.getPort();
-            replicaSender.startConnection(ip, port);
+            try {
+                replicaSender.startConnection(ip, port);
+            } catch (Exception e) {
+                logger.error("Can't connect to " + serverIdentifier + ",  please confirm whether it is online");
+                allSucceeded = false;
+                continue;
+            }
+            
             boolean succeeded = false;
             try {
                 succeeded = replicaSender.sendMessage(alias, url, expires);
@@ -98,9 +105,9 @@ public class ReplicationService {
         private ServerIdentifier serverIdentifier;
         private String alias;
         private String url;
-        private Calendar expires;
+        private Timestamp expires;
 
-        public PropagateTask(ServerIdentifier serverIdentifier, String alias, String url, Calendar expires) {
+        public PropagateTask(ServerIdentifier serverIdentifier, String alias, String url, Timestamp expires) {
             this.serverIdentifier = serverIdentifier;
             this.alias = alias;
             this.url = url;

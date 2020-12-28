@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 
 import com.opencsv.CSVReader;
@@ -39,7 +38,7 @@ public class DatabaseAdaper {
             String urlSchemaSql = "CREATE TABLE IF NOT EXISTS " + urlTableName +
                 " (alias VARCHAR(16) PRIMARY KEY NOT NULL," +
                 "url VARCHAR(512) NOT NULL," +
-                "expires DATETIME NOT NULL);";
+                "expires TIMESTAMP NOT NULL);";
             String dateIndexSql = "CREATE INDEX IF NOT EXISTS expire_idx " +
                 "ON " + urlTableName + " (expires)";
             statement.executeUpdate(urlSchemaSql);
@@ -71,7 +70,7 @@ public class DatabaseAdaper {
                     String alias = line[0];
                     String expires = line[1];
                     String url = line[2];
-                    AliasRecord record = new AliasRecord(alias, url, Timestamp.valueOf(expires).toGMTString());
+                    AliasRecord record = new AliasRecord(alias, url, expires);
                     insertUrl(record);
                 }
             } catch (Exception e) {
@@ -89,13 +88,23 @@ public class DatabaseAdaper {
      * Insert a url record into database
      * @param alias hashed url
      * @param url original url
-     * @param expirationDate needs to be in the format of "yyyy-MM-dd HH:mm:ss"
+     * @param expires expires String, needs to be in the format of "yyyy-MM-dd HH:mm:ss.msmsms"
      */
-    synchronized public void insertUrl(String alias, String url, String expirationDate){
+     public void insertUrl(String alias, String url, String expires){
+        insertUrl(alias, url, Timestamp.valueOf(expires));
+    }
+
+    /**
+     * Insert a url record into database
+     * @param alias hashed url
+     * @param url original url
+     * @param expires expiring time stamp, this is of type java.sql.Timestamp
+     */
+    synchronized public void insertUrl(String alias, String url, Timestamp expires) {
         try {
             insertQuery.setString(1, alias);
             insertQuery.setString(2, url);
-            insertQuery.setString(3, expirationDate);
+            insertQuery.setTimestamp(3, expires);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -110,18 +119,8 @@ public class DatabaseAdaper {
         logger.debug("Database: successfully inserted " + alias+" : " + url);
     }
 
-    public void insertUrl(String alias, String url, Calendar expirationDate) {
-        String expireDateString = toSqlDate(expirationDate);
-        insertUrl(alias, url, expireDateString);
-    }
-
     public void insertUrl(AliasRecord record){
         insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
-    }
-
-    public static String toSqlDate(Calendar date){
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        return sdf.format(date.getTime());
     }
 
     /**
