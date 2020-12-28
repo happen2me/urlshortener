@@ -1,33 +1,35 @@
 package co.yuanchun.app.replication;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.DatabaseAdaper;
+import co.yuanchun.app.communication.MessageReceiver;
 
-public class ReplicaReceiver implements Runnable {
+public class ReplicaReceiver extends MessageReceiver implements Runnable {
     private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getSimpleName());
 
-    private int serverPort;
-    private ServerSocket serverSocket;
-    private boolean isStopped;
     protected Thread runningThread;
     private DatabaseAdaper database;
 
     public ReplicaReceiver(int replicatorPort, DatabaseAdaper database){
-        this.serverPort = replicatorPort;
-        this.isStopped = false;
-        this.serverSocket = null;
+        super(replicatorPort);
         this.runningThread = null;
+        
         this.database = database;
     }
 
     @Override
     public void run(){
+        start();
+    }
+
+
+    @Override
+    public void start() {
         synchronized(this){
             this.runningThread = Thread.currentThread();
         }
@@ -36,7 +38,7 @@ public class ReplicaReceiver implements Runnable {
             Socket clientSocket = null;
             try {
                 logger.debug("Receiver started");
-                clientSocket = this.serverSocket.accept();
+                clientSocket = getServerSocket().accept();
             } catch (IOException e) {
                 if (isStopped()) {
                     logger.debug("Replicator stopped");
@@ -45,32 +47,17 @@ public class ReplicaReceiver implements Runnable {
                 throw new RuntimeException("Error accepting client connection", e);
             }
             new Thread(
-                new ReceiverWorker(clientSocket, database)
+                new ReplicaReceiverWorker(clientSocket, database)
             ).start();
         }
 
-        
     }
 
-    private synchronized boolean isStopped() {
-        return this.isStopped;
-    }
-
-    public synchronized void stop(){
-        this.isStopped = true;
-        try {
-            this.serverSocket.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Error closing server", e);
-        }
-    }
-
-    private void openServerSocket() {
-        try {
-            this.serverSocket = new ServerSocket(this.serverPort);
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot open port " + this.serverPort, e);
-        }
+    @Override
+    public void handleClientSocket(Socket clientSocket) {
+        new Thread(
+                new ReplicaReceiverWorker(clientSocket, database)
+            ).start();
     }
 
     //test
