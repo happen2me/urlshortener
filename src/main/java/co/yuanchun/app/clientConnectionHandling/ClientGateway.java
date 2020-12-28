@@ -84,7 +84,7 @@ public class ClientGateway {
         private String handleGET(HttpExchange httpExchange) throws IOException {        
             long id = requestID.incrementAndGet();
             String alias = httpExchange.getRequestURI().getPath();
-            if (alias == null) {
+            if (alias == null || alias == "/") {
               logger.error("GET requests should have an alias.");
               httpExchange.sendResponseHeaders(400, 0);
               httpExchange.close();
