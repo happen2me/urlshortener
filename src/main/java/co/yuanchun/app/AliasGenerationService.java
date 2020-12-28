@@ -41,15 +41,18 @@ public class AliasGenerationService {
     }
 
     public AliasRecord generateAlias(String url){
-        String alias = generateHash(url);
+        String uniqueUrl = url;
+        String alias = generateHash(uniqueUrl);
         String urlFound = database.findAlias(alias);
+        int unique = -1;
         while(urlFound != ""){ // modify url if duplicated
-            url = increaseUrl(urlFound);
-            alias = generateHash(url); // iterate increamentally through all other collisions to find ununsed hash
+            //uniqueUrl = increaseUrl(uniqueUrl);
+            uniqueUrl = url + unique;
+            alias = generateHash(uniqueUrl); // iterate increamentally through all other collisions to find ununsed hash
             urlFound = database.findAlias(alias);
+            unique++;
         }
-        Calendar expires = generateExpireDateBasedCurrentTime();
-        referenceLogger.info(String.format("GENERATED_HASH_FOR_URL(%s,%s)", alias, url));
+        Calendar expires = generateExpireDateBasedCurrentTime();        
         return new AliasRecord(alias, url, expires);
     }
 
@@ -59,6 +62,7 @@ public class AliasGenerationService {
         return calendar;
     }
 
+    @Deprecated
     private String increaseUrl(String url){
         String[] splits = url.split(" ", 2); // split by first space
         if(splits.length > 1){ // has leading numbers, namely at least second collision
@@ -77,17 +81,19 @@ public class AliasGenerationService {
         return url;
     }
 
+    @Deprecated
     public static String stripeDuplicateUrl(String url){
-        String[] splits = url.split(" ", 2); // url is "No[space]url" or "url"
-        if(splits.length > 1){
-            url = splits[1];
-        }
+        // String[] splits = url.split(" ", 2); // url is "No[space]url" or "url"
+        // if(splits.length > 1){
+        //     url = splits[1];
+        // }
         return url;
     }
 
     private String generateHash(String url) {
         byte[] hash = md5.digest(url.getBytes());
         String key = Base64.getEncoder().encodeToString(hash);
+        referenceLogger.info(String.format("GENERATED_HASH_FOR_URL(%s,%s)", key, url));
         return key.substring(0, ALIAS_LENGTH);
     }
 

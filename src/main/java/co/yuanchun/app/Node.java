@@ -67,8 +67,8 @@ public class Node {
         String urlFound = dbAdapter.findAlias(alias);
         // alias generation service defined how to handle duplicated url,
         // therefore it should also be responsible for analyzed transformed url
-        String url = AliasGenerationService.stripeDuplicateUrl(urlFound);
-        return url;
+        // String url = AliasGenerationService.stripeDuplicateUrl(urlFound);
+        return urlFound;
     }
 
     private void setupDatabase(String databasePath){

@@ -51,3 +51,6 @@ hs_err_pid*
 .project
 .classpath
 .setting
+
+# machine specific configurations
+scripts/configure.py
