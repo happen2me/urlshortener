@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.DatabaseAdaper;
+import co.yuanchun.app.communication.ServerIdentifier;
 
 public class ReplicationService {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");

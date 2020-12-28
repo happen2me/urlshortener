@@ -15,7 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.clientConnectionHandling.ClientGateway;
-import co.yuanchun.app.replication.ServerIdentifier;
+import co.yuanchun.app.communication.ServerIdentifier;
 
 public class App {
     private static final Logger logger = LogManager.getLogger(App.class.getSimpleName());

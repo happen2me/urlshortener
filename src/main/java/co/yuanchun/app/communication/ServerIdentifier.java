@@ -1,4 +1,4 @@
-package co.yuanchun.app.replication;
+package co.yuanchun.app.communication;
 
 public class ServerIdentifier {
     private String ip;

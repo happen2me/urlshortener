@@ -19,7 +19,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.Node;
-import co.yuanchun.app.replication.ServerIdentifier;
+import co.yuanchun.app.communication.ServerIdentifier;
 
 /**
  * Hello world!

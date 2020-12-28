@@ -11,35 +11,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
-public class ReplicaSender {
+import co.yuanchun.app.communication.MessageSender;
+import co.yuanchun.app.communication.MessageType;
+
+public class ReplicaSender extends MessageSender{
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private static final Logger logger = LogManager.getLogger(ReplicaReceiver.class.getSimpleName());
+    private static final Logger logger = LogManager.getLogger(ReplicaSender.class.getSimpleName());
     
-    private Socket senderSocket;
-    ObjectOutputStream outputStream = null;
-    ObjectInputStream inputStream = null;
-    ServerIdentifier serverToConnect;
 
     public ReplicaSender() {
-
-    }
-
-    public void startConnection(String ip, int port) throws IOException{
-        serverToConnect = new ServerIdentifier(ip, port);
-
-        // might throw IOException
-        senderSocket = new Socket(ip, port);
-
-        try {
-            outputStream = new ObjectOutputStream(senderSocket.getOutputStream());
-            inputStream = new ObjectInputStream(senderSocket.getInputStream());
-        } catch (IOException e) {
-            logger.error("Error when get out/input stream", e);
-        }
+        super();
     }
 
     public boolean sendMessage(String alias, String url, Timestamp expireDate) throws IOException{
-        if (outputStream == null) {
+        if (!isIOStreamsValid()) {
             logger.error("Outputstream is null");
             return false;
         }
@@ -50,92 +35,15 @@ public class ReplicaSender {
         msg.put("alias", alias);
         msg.put("url", url);
         msg.put("expires", expireDate.toString());
-        
-        outputStream.writeObject(msg.toString());
 
-        Object o = null;
-        try {
-            logger.debug("reading after sending " + msg.getString("type"));
-            o = inputStream.readObject();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        if(o instanceof String){
-            String jsonString = (String) o;
-            JSONObject response = null;
-            try {
-                response = new JSONObject(jsonString);
-            } catch (Exception e) {
-                logger.error("Can't parse " + jsonString + " to json object.", e);
-                return false;
-            }
-            if (response.getString("type").equals(MessageType.INSERT_CONFIRMATION)){
-                referenceLogger.info(String.format(" REMOTE_WRITE_CONFIRMED(%s,%s) ", serverToConnect, alias));
-                return true;
-            }
-            else{
-                return false;
-            }
+        JSONObject response = sendJson(msg);
+
+        if (response.getString("type").equals(MessageType.INSERT_CONFIRMATION)){
+            referenceLogger.info(String.format(" REMOTE_WRITE_CONFIRMED(%s,%s) ", super.serverToConnect, alias));
+            return true;
         }
         else{
             return false;
-        }
-    }
-
-    @Deprecated
-    public String sendMessage(String msg) throws IOException {
-        if (outputStream == null) {
-            logger.error("outputstream is null");
-            return "";
-        }
-        outputStream.writeObject(msg);
-        Object o = null;
-        try {
-            logger.debug("reading after sending " + msg);
-            o = inputStream.readObject();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        if(o instanceof String){
-            return (String) o;
-        }
-        else{
-            return "Empty response";
-        }
-    }
-
-    public void stopConnection(){
-        if (outputStream == null) {            
-            try {
-                senderSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            logger.error("Output stream is null, probably connection hasn't been established. Socket closed.");
-            return;
-        }
-        // Inform server to close this connection
-        JSONObject msg = new JSONObject();
-        msg.put("type", "cmd-close");
-        try {
-            outputStream.writeObject(msg.toString());
-        } catch (IOException e1) {
-            logger.error("repsend: error inform server close", e1);
-        }
-
-        try {
-            inputStream.close();
-            outputStream.close();
-        } catch (IOException e) {
-            logger.error("Error closing in//output streams");
-            e.printStackTrace();
-        }
-        
-        try {
-            senderSocket.close();
-        } catch (IOException e) {
-            logger.error("Error closing sender socket");
-            e.printStackTrace();
         }
     }
 

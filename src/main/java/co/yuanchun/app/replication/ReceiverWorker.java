@@ -5,13 +5,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import co.yuanchun.app.DatabaseAdaper;
-import co.yuanchun.app.AliasGenerationService;
+import co.yuanchun.app.communication.MessageType;
 
 public class ReceiverWorker implements Runnable{
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
