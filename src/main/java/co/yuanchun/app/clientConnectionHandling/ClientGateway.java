@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.net.InetSocketAddress;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,8 +18,6 @@ import com.sun.net.httpserver.HttpServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import co.yuanchun.app.AliasGenerationService;
-import co.yuanchun.app.DatabaseAdaper;
 import co.yuanchun.app.Node;
 import co.yuanchun.app.replication.ServerIdentifier;
 
@@ -100,7 +97,7 @@ public class ClientGateway {
                 logger.info("Queried URL not found");
             }
             else{
-                logger.info("ClientGateway: found url " + url);
+                logger.info("Found url " + url);
             }            
             return url;
           }
@@ -116,7 +113,7 @@ public class ClientGateway {
             }
             referenceLogger.info(String.format("RECEIVED_CLIENT_REQUEST(%d,POST,%s)", id, requestString));
             String alias = node.addUrl(requestString);
-            logger.debug("ClientGateway: alias is " + alias);
+            logger.debug("Alias is " + alias);
             return alias;
         }
 

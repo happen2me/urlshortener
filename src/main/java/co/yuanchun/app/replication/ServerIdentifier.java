@@ -49,7 +49,7 @@ public class ServerIdentifier {
 
     @Override
     public String toString(){
-        return ip + port;
+        return ip + ":" + port;
     }
     
 }

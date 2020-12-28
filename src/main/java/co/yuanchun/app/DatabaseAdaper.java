@@ -8,8 +8,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import com.opencsv.CSVReader;
 
@@ -17,7 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class DatabaseAdaper {
-    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private final static Logger logger = LogManager.getLogger(DatabaseAdaper.class.getSimpleName());
     private Connection connection;
     private final static String urlTableName = "URL";
@@ -62,7 +59,6 @@ public class DatabaseAdaper {
           int aliasCount = connection.createStatement().executeQuery("SELECT COUNT(*) FROM " + urlTableName).getInt(1);
           if (aliasCount == 0) {
             logger.info("Bulkloading dataset");
-            // TODO: use java.sql.Timestamp instead of Calendar
             try (CSVReader reader = new CSVReader(new FileReader(datasetPath))) {
                 reader.readNext();
                 String[] line;
@@ -116,7 +112,7 @@ public class DatabaseAdaper {
         } catch (SQLException e) {
             logger.error(e.getMessage());
         }
-        logger.debug("Database: successfully inserted " + alias+" : " + url);
+        logger.debug("Successfully inserted " + alias+" : " + url);
     }
 
     public void insertUrl(AliasRecord record){
@@ -140,10 +136,10 @@ public class DatabaseAdaper {
             ResultSet result = readQuery.executeQuery();
             if (result.next()) {
                 url = result.getString("url");
-                logger.info("Database: found url: " + url + " for alias " + alias);
+                logger.info("Found url: " + url + " for alias " + alias);
             }
             else{
-                logger.info("Database: Alias " + alias + " not found");
+                logger.info("Alias " + alias + " not found");
             }
         } catch (SQLException e) {
             logger.error(e.getMessage());
