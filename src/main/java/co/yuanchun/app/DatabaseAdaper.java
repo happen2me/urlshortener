@@ -1,14 +1,18 @@
 package co.yuanchun.app;
 
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+
+import com.opencsv.CSVReader;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,6 +57,33 @@ public class DatabaseAdaper {
             logger.error(e.getMessage());
         }
     }
+
+    public void bulkloadDataset(String datasetPath) {
+        try {
+          int aliasCount = connection.createStatement().executeQuery("SELECT COUNT(*) FROM " + urlTableName).getInt(1);
+          if (aliasCount == 0) {
+            logger.info("Bulkloading dataset");
+            // TODO: use java.sql.Timestamp instead of Calendar
+            try (CSVReader reader = new CSVReader(new FileReader(datasetPath))) {
+                reader.readNext();
+                String[] line;
+                while ((line = reader.readNext()) != null) {
+                    String alias = line[0];
+                    String expires = line[1];
+                    String url = line[2];
+                    AliasRecord record = new AliasRecord(alias, url, Timestamp.valueOf(expires).toGMTString());
+                    insertUrl(record);
+                }
+            } catch (Exception e) {
+                logger.error("Can't read from csv file: " + datasetPath, e);
+            }
+            logger.info("Dataset loaded");
+          }
+        } catch (SQLException e) {
+          logger.error(e.getMessage());
+          throw new RuntimeException("Could not load CSV file.");
+        }
+      }
 
     /**
      * Insert a url record into database

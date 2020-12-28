@@ -21,22 +21,22 @@ public class Node {
     private List<ServerIdentifier> serverList; // servers to communicate to
     private AliasGenerationService aliasGenerationService;
     private ReplicationService replicationService;
-    
 
     /**
      * Constructor of Node, each node is an abstract of a single physical server.
      * Please call initializeServices() after construction
+     * 
      * @param databasePath
      * @param serverList
      * @param replicationListenningPort
      */
-    public Node(String databasePath, List<ServerIdentifier> serverList, int replicationListenningPort){
+    public Node(String databasePath, List<ServerIdentifier> serverList, int replicationListenningPort) {
         this.serverList = serverList;
         this.replicationListenningPort = replicationListenningPort;
         setupDatabase(databasePath);
     }
 
-    public void initializeServices(){
+    public void initializeServices() {
         // initilize alias generation service
         aliasGenerationService = new AliasGenerationService(dbAdapter);
         // initialize replication service
@@ -45,12 +45,13 @@ public class Node {
     }
 
     /**
-     * Generate alias for a url and save it to both local and remote database.
-     * This is called by client connection handler
+     * Generate alias for a url and save it to both local and remote database. This
+     * is called by client connection handler
+     * 
      * @param url
      * @return generated alias
      */
-    public String addUrl(String url){
+    public String addUrl(String url) {
         // generate alias with AliasGenerationService
         AliasRecord record = aliasGenerationService.generateAlias(url);
         // save to local database
@@ -62,7 +63,7 @@ public class Node {
         return record.getAlias();
     }
 
-    public String findAlias(String alias){
+    public String findAlias(String alias) {
         // look up an alias from database
         String urlFound = dbAdapter.findAlias(alias);
         // alias generation service defined how to handle duplicated url,
@@ -71,7 +72,7 @@ public class Node {
         return urlFound;
     }
 
-    private void setupDatabase(String databasePath){
+    private void setupDatabase(String databasePath) {
         try {
             dbAdapter = new DatabaseAdaper(DB_LOC_PREFIX + databasePath);
         } catch (SQLException e) {
@@ -80,5 +81,9 @@ public class Node {
             System.exit(1);
         }
         dbAdapter.initializeDb();
+        if (App.GetGloablVarsMap().containsKey("initial_dataset")) {
+            logger.info("Bulk loading data set from " + App.GetGlobalVar("initial_dataset") );
+            dbAdapter.bulkloadDataset(App.GetGlobalVar("initial_dataset"));
+        }
     }
 }
