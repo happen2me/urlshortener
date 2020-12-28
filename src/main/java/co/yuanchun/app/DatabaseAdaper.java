@@ -28,7 +28,7 @@ public class DatabaseAdaper {
         this.connection = DriverManager.getConnection(dbLocation);
     }
 
-    public void initializeDb(){        
+    synchronized public void initializeDb(){
         try {
             Statement statement = connection.createStatement();
             statement.setQueryTimeout(30); // set timeout to 30 sec.
@@ -60,7 +60,7 @@ public class DatabaseAdaper {
      * @param url original url
      * @param expirationDate needs to be in the format of "yyyy-MM-dd HH:mm:ss"
      */
-    public void insertUrl(String alias, String url, String expirationDate){
+    synchronized public void insertUrl(String alias, String url, String expirationDate){
         try {
             insertQuery.setString(1, alias);
             insertQuery.setString(2, url);
@@ -98,7 +98,7 @@ public class DatabaseAdaper {
      * @param alias
      * @return "" if not found, url string otherwise.
      */
-    public String findAlias(String alias){
+    synchronized public String findAlias(String alias){
         String url = "";
         try {
             readQuery.setString(1, alias);
