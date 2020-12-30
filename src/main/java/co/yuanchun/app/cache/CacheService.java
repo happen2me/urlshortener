@@ -1,8 +1,6 @@
 package co.yuanchun.app.cache;
 
 import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,11 +15,11 @@ import org.json.JSONObject;
 import co.yuanchun.app.AliasRecord;
 import co.yuanchun.app.App;
 import co.yuanchun.app.DatabaseAdaper;
-import co.yuanchun.app.Node;
 import co.yuanchun.app.communication.MessageType;
 import co.yuanchun.app.communication.ServerIdentifier;
 
 public class CacheService {
+    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private static final Logger logger = LogManager.getLogger(ForwardSender.class.getSimpleName());
     
     DatabaseAdaper database;
@@ -47,7 +45,11 @@ public class CacheService {
      * @return url in String or null
      */
     public String findAliasInCache(String alias) {
-        return cache.getIfPresent(alias);
+        String url = cache.getIfPresent(alias);
+        if (url != null) {
+            referenceLogger.info(String.format("READ_CACHE_SUCESS(%s)", alias));
+        }
+        return url;
     }
 
     public ServerIdentifier consistentHash(String alias){
@@ -78,6 +80,7 @@ public class CacheService {
         // Write to local cache
         if (record != null) {
             cache.put(alias, record.getUrl());
+            referenceLogger.info(String.format("READ_STORAGE_SUCESS(%s)", alias));
             return record.getUrl();
         } else {
             return "";
@@ -113,22 +116,22 @@ public class CacheService {
         return url;
     }
 
-    public static void main(String[] args) {
-        DatabaseAdaper database;
-        try {
-            database = new DatabaseAdaper(Node.DB_LOC_PREFIX + ":memory:");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return;
-        }
-        database.initializeDb();
-        CacheService cacheService = new CacheService(database, null);
+    // public static void main(String[] args) {
+    //     DatabaseAdaper database;
+    //     try {
+    //         database = new DatabaseAdaper(Node.DB_LOC_PREFIX + ":memory:");
+    //     } catch (SQLException e) {
+    //         e.printStackTrace();
+    //         return;
+    //     }
+    //     database.initializeDb();
+    //     CacheService cacheService = new CacheService(database, null);
 
-        database.insertUrl("alias1", "1.com", new Timestamp(System.currentTimeMillis()));
-        database.insertUrl("alias2", "2.com", new Timestamp(System.currentTimeMillis()));
-        // Test load in cache
-        System.out.println("find alias1 in cache is null?: " + (cacheService.findAliasInCache("alias1") == null));
-        System.out.println("find alias 1 in database: " + cacheService.findAliasInDatabase("alias1"));
-        System.out.println("find alias1 again in cache: " + cacheService.findAliasInCache("alias1"));
-    }
+    //     database.insertUrl("alias1", "1.com", new Timestamp(System.currentTimeMillis()));
+    //     database.insertUrl("alias2", "2.com", new Timestamp(System.currentTimeMillis()));
+    //     // Test load in cache
+    //     System.out.println("find alias1 in cache is null?: " + (cacheService.findAliasInCache("alias1") == null));
+    //     System.out.println("find alias 1 in database: " + cacheService.findAliasInDatabase("alias1"));
+    //     System.out.println("find alias1 again in cache: " + cacheService.findAliasInCache("alias1"));
+    // }
 }
