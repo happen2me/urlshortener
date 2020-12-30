@@ -23,6 +23,10 @@ public abstract class MessageSender {
 
     }
 
+    public void startConnection(ServerIdentifier serverIdentifier) throws IOException{
+        startConnection(serverIdentifier.getIp(), serverIdentifier.getPort());
+    }
+
     public void startConnection(String ip, int port) throws IOException{
         serverToConnect = new ServerIdentifier(ip, port);
 

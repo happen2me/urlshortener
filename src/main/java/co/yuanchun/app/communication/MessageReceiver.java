@@ -7,20 +7,37 @@ import java.net.Socket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class MessageReceiver{
+import co.yuanchun.app.DatabaseAdaper;
+
+public class MessageReceiver implements Runnable{
     private static final Logger logger = LogManager.getLogger(MessageReceiver.class.getSimpleName());
 
     protected int serverPort;
     protected ServerSocket serverSocket;
     private boolean isStopped;
 
-    public MessageReceiver(int replicatorPort){
+    protected Thread runningThread;
+    private DatabaseAdaper database;
+
+    public MessageReceiver(int replicatorPort, DatabaseAdaper database){
         this.serverPort = replicatorPort;
+        this.database = database;
+
         this.isStopped = false;
         this.serverSocket = null;
+        this.runningThread = null;
     }
 
-    public abstract void handleClientSocket(Socket clientSocket);
+    @Override
+    public void run() {
+        start();
+    }
+
+    public void handleClientSocket(Socket clientSocket) {
+        new Thread(
+                new MessageReceiverWorker(clientSocket, database)
+            ).start();
+    }
 
     public void start(){
         openServerSocket();
@@ -65,4 +82,6 @@ public abstract class MessageReceiver{
     protected ServerSocket getServerSocket(){
         return serverSocket;
     }
+
+    
 }

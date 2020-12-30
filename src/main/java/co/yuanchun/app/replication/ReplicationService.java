@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.DatabaseAdaper;
+import co.yuanchun.app.communication.MessageReceiver;
 import co.yuanchun.app.communication.ServerIdentifier;
 
 public class ReplicationService {
@@ -41,7 +42,7 @@ public class ReplicationService {
 
     public void startListen(int port) {
         logger.info("Start listening incoming replication on port " + port);
-        receiverThread = new Thread(new ReplicaReceiver(port, database));
+        receiverThread = new Thread(new MessageReceiver(port, database));
         receiverThread.start();
     }
 

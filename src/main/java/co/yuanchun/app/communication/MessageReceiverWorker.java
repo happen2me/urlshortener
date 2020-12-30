@@ -12,19 +12,46 @@ import org.json.JSONObject;
 import co.yuanchun.app.DatabaseAdaper;
 import co.yuanchun.app.communication.MessageType;
 
-public abstract class MessageReceiverWorker {
+public class MessageReceiverWorker implements Runnable{
+    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private final static Logger logger = LogManager.getLogger(MessageReceiverWorker.class.getSimpleName());
 
     private Socket clientSocket = null;
     private boolean isStopped;
 
-    public MessageReceiverWorker(Socket clientSocket){
+    private DatabaseAdaper database;
+
+    public MessageReceiverWorker(Socket clientSocket, DatabaseAdaper database){
         this.clientSocket = clientSocket;
         this.isStopped = false;
+        this.database = database;
     }
 
+    @Override
+    public void run() {
+        start();
+    }
 
-    protected abstract void handleJson(JSONObject record, ObjectOutputStream outputStream);
+    public void handleJson(JSONObject record, ObjectOutputStream output) {
+        if (record.getString("type").equals(MessageType.INSERT_REQUEST)) {
+            String alias = record.getString("alias");
+            String url = record.getString("url");
+            String expirationDate = record.getString("expires");
+            // TODO: compose other_nodeID
+            referenceLogger.info(String.format("REMOTE_WRITE_RECEIVED(%s,%s)", getClientSocket().getInetAddress(), alias));
+            database.insertUrl(alias, url, expirationDate);
+            JSONObject response = new JSONObject();
+            response.put("type", MessageType.INSERT_CONFIRMATION);
+            try {
+                output.writeObject(response.toString());
+            } catch (IOException e) {
+                logger.error(e);
+            }
+        } else if (record.getString("type").equals(MessageType.CMD_CLOSE)) {
+            // Close socket connection to client
+            stop();
+        }
+    }
    
     public void start() {
         try {

@@ -147,4 +147,33 @@ public class DatabaseAdaper {
         return url;
     }
 
+    synchronized public AliasRecord findAliasRecord(String alias){
+        String url = "";
+        Timestamp expires = null;
+        try {
+            readQuery.setString(1, alias);
+        } catch (SQLException e1) {
+            logger.error(e1.getMessage());
+            throw new RuntimeException("Could not prepare read query.");
+        }
+        try {
+            ResultSet result = readQuery.executeQuery();
+            if (result.next()) {
+                url = result.getString("url");
+                expires = result.getTimestamp("expires");
+                logger.info("Found url: " + url + " for alias " + alias);
+            }
+            else{
+                logger.info("Alias " + alias + " not found");
+            }
+        } catch (SQLException e) {
+            logger.error(e.getMessage());
+        }
+        if (expires == null) {
+            return null;
+        } else {
+            return new AliasRecord(alias, url, expires);   
+        }
+           
+    }
 }

@@ -13,7 +13,7 @@ public class Node {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private static final Logger logger = LogManager.getLogger(AliasGenerationService.class.getSimpleName());
 
-    private static final String DB_LOC_PREFIX = "jdbc:sqlite:";
+    public static final String DB_LOC_PREFIX = "jdbc:sqlite:";
 
     private DatabaseAdaper dbAdapter;
     private int replicationListenningPort;
