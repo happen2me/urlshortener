@@ -3,6 +3,9 @@ package co.yuanchun.app.cache;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -12,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import co.yuanchun.app.AliasRecord;
+import co.yuanchun.app.App;
 import co.yuanchun.app.DatabaseAdaper;
 import co.yuanchun.app.Node;
 import co.yuanchun.app.communication.MessageType;
@@ -23,11 +27,18 @@ public class CacheService {
     DatabaseAdaper database;
     Cache<String, String> cache;
     ForwardSender sender;
+    List<ServerIdentifier> allServers;
 
-    public CacheService(DatabaseAdaper database) {
-        this.database = database;
+    public CacheService(DatabaseAdaper database, List<ServerIdentifier> serverList) {
+        this.database = database;        
         cache = Caffeine.newBuilder().maximumSize(1000).build();
         sender = new ForwardSender();
+        // set up server list
+        if (serverList != null) {
+            allServers = new ArrayList<>(serverList);
+            allServers.add(App.GetIdentifier());
+            Collections.sort(allServers);
+        }
     }
 
     /**
@@ -39,14 +50,21 @@ public class CacheService {
         return cache.getIfPresent(alias);
     }
 
+    public ServerIdentifier consistentHash(String alias){
+        int range = allServers.size();
+        int idx = hashInRange(alias, range);
+        return allServers.get(idx);
+    }
+
     /**
      * Hash an alias to an integer within a given range
      * @param alias the alias to hash
      * @param range a specific range
      * @return results will in between [0, range-1]
      */
-    public int consistentHash(String alias, int range) {
-        return alias.hashCode() % range;
+    private int hashInRange(String alias, int range) {
+        logger.debug("Hash code of " + alias + " is " + alias.hashCode());
+        return Math.abs(alias.hashCode()) % range;
     }
 
     /**
@@ -68,28 +86,31 @@ public class CacheService {
 
     /**
      * Connect to a dest server, send alias read request, wait for response, and close connection.
-     * @param dest
+     * @param dest the destination server to forward request to
      * @param alias
+     * @return url of requested alias, "" if not found, null otherwise
      */
-    public void forwardQuery(ServerIdentifier dest, String alias) {
+    public String forwardQuery(ServerIdentifier dest, String alias) {
         try {
             sender.startConnection(dest);
         } catch (IOException e) {
             logger.error("Can't connect to " + dest + ", please confirm whether the server is still online");
-            return;
+            return null;
         }
         JSONObject response = sender.forwardQuery(dest, alias);
         sender.stopConnection();
-        if(response.getString("type") == MessageType.READ_FORWARD_CONFIRMATION){
-            String url = response.getString("url");
+        String url = null;
+        if(response.getString("type").equals(MessageType.READ_FORWARD_CONFIRMATION)){
+            url = response.getString("url");
         }
-        else if(response.getString("type") == MessageType.READ_FORWARD_NOT_FOUND){
-            // TODO: not found
+        else if(response.getString("type").equals(MessageType.READ_FORWARD_NOT_FOUND)){
+            url = "";
         }
         else{
-            
+            logger.error("Forward got unexpected result of message type: " + response.getString("type"));
+            url = null;
         }
-        
+        return url;
     }
 
     public static void main(String[] args) {
@@ -101,7 +122,7 @@ public class CacheService {
             return;
         }
         database.initializeDb();
-        CacheService cacheService = new CacheService(database);
+        CacheService cacheService = new CacheService(database, null);
 
         database.insertUrl("alias1", "1.com", new Timestamp(System.currentTimeMillis()));
         database.insertUrl("alias2", "2.com", new Timestamp(System.currentTimeMillis()));

@@ -1,6 +1,6 @@
 package co.yuanchun.app.communication;
 
-public class ServerIdentifier {
+public class ServerIdentifier implements Comparable<ServerIdentifier>{
     private String ip;
     private int port;
 
@@ -10,6 +10,10 @@ public class ServerIdentifier {
     }
 
     public String getIp() {
+        // translate localhost to 127.0.0.1 to guanratee comparability
+        if (ip == "localhost") {
+            return "127.0.0.1";
+        }
         return ip;
     }
 
@@ -36,7 +40,10 @@ public class ServerIdentifier {
         }
 
         final ServerIdentifier other = (ServerIdentifier) obj;
-        if ((this.ip == null) ? (other.ip != null) : !this.ip.equals(other.ip)) {
+
+        
+        // use getIp() to leverage localhost translation
+        if ((this.ip == null) ? (other.ip != null) : !this.getIp().equals(other.getIp())) {
             return false;
         }
 
@@ -49,7 +56,12 @@ public class ServerIdentifier {
 
     @Override
     public String toString(){
-        return ip + ":" + port;
+        return getIp() + ":" + port;
+    }
+
+    @Override
+    public int compareTo(ServerIdentifier o) {
+        return this.toString().compareTo(o.toString());
     }
     
 }

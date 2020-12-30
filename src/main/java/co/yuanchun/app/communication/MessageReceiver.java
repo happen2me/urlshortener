@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import co.yuanchun.app.DatabaseAdaper;
+import co.yuanchun.app.cache.CacheService;
 
 public class MessageReceiver implements Runnable{
     private static final Logger logger = LogManager.getLogger(MessageReceiver.class.getSimpleName());
@@ -18,10 +19,12 @@ public class MessageReceiver implements Runnable{
 
     protected Thread runningThread;
     private DatabaseAdaper database;
+    private CacheService cache;
 
-    public MessageReceiver(int replicatorPort, DatabaseAdaper database){
+    public MessageReceiver(int replicatorPort, DatabaseAdaper database, CacheService cache){
         this.serverPort = replicatorPort;
         this.database = database;
+        this.cache = cache;
 
         this.isStopped = false;
         this.serverSocket = null;
@@ -35,7 +38,7 @@ public class MessageReceiver implements Runnable{
 
     public void handleClientSocket(Socket clientSocket) {
         new Thread(
-                new MessageReceiverWorker(clientSocket, database)
+                new MessageReceiverWorker(clientSocket, database, cache)
             ).start();
     }
 

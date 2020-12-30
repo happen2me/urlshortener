@@ -12,19 +12,16 @@ import java.util.concurrent.FutureTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import co.yuanchun.app.DatabaseAdaper;
-import co.yuanchun.app.communication.MessageReceiver;
 import co.yuanchun.app.communication.ServerIdentifier;
 
 public class ReplicationService {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private static final Logger logger = LogManager.getLogger(ReplicationService.class.getSimpleName());
 
-    private DatabaseAdaper database;
+    
     private List<ServerIdentifier> serverList;
-    private Thread receiverThread;
+    
     private ReplicaSender replicaSender;
-    private ServerIdentifier selfIdentifier;
 
     /**
      * To write to remote database
@@ -34,20 +31,9 @@ public class ReplicationService {
      * @param serverList is a list of remote servers to send messages to, each
      *                   component is of the type ServerIdentifier
      */
-    public ReplicationService(DatabaseAdaper database, List<ServerIdentifier> serverList) {
-        this.database = database;
+    public ReplicationService(List<ServerIdentifier> serverList) {
         this.serverList = serverList;
         this.replicaSender = new ReplicaSender();
-    }
-
-    public void startListen(int port) {
-        logger.info("Start listening incoming replication on port " + port);
-        receiverThread = new Thread(new MessageReceiver(port, database));
-        receiverThread.start();
-    }
-
-    public void stopListen() {
-        // TODO: implement asyncronous stop method
     }
 
     /**

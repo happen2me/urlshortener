@@ -47,10 +47,10 @@ public class App {
         CommandLineParser parser = new DefaultParser();
 
         Options options = new Options();
-        options.addRequiredOption("p", "port", true, "the port to use for the client server.");
+        options.addRequiredOption("p", "port", true, "the http port to use for the client server.");
         options.addRequiredOption("i", "ip", true, "the ip address to use for the client server");
         options.addRequiredOption("d", "database", true, "the file path to the sqlite database file");
-        options.addRequiredOption("l", "replica_listen_port", true, "the port to listen to incoming replications");
+        options.addRequiredOption("l", "msg_port", true, "the port to listen to incoming replications");
         options.addOption("s", "servers", true, "the addresses of the other servers to connect to");
         options.addOption("init", "initial_dataset", true, "the initial dataset location to bulk load");
 
@@ -61,11 +61,11 @@ public class App {
             port = Integer.parseInt(line.getOptionValue("port"));
             ip = line.getOptionValue("ip");
             databaseFilePath = line.getOptionValue("database");
-            replicationPort = Integer.parseInt(line.getOptionValue("replica_listen_port"));
+            replicationPort = Integer.parseInt(line.getOptionValue("msg_port"));
 
             SetGlobalVar("local_ip", ip);
             SetGlobalVar("http_port", String.valueOf(port));
-            SetGlobalVar("replica_listen_port", String.valueOf(replicationPort));
+            SetGlobalVar("msg_port", String.valueOf(replicationPort));
 
             if (line.hasOption("servers")) {
                 String serverList = line.getOptionValue("servers");
@@ -107,5 +107,11 @@ public class App {
     public static String GetGlobalVar(String key) {
         HashMap<String, String> map = globalVars.get();
         return map.get(key);
+    }
+
+    public static ServerIdentifier GetIdentifier(){
+        String ip = GetGlobalVar("local_ip");
+        int msgPort = Integer.valueOf(GetGlobalVar("msg_port"));
+        return new ServerIdentifier(ip, msgPort);
     }
 }
