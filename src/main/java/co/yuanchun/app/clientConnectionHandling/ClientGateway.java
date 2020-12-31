@@ -128,7 +128,8 @@ public class ClientGateway {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            String output = sBuilder.toString().stripTrailing();
+            // removed stripTrailing method
+            String output = sBuilder.toString();
             return output;
         }
         
