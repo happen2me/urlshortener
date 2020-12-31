@@ -1,5 +1,7 @@
 .vscode/*
 src/main/java/co/yuanchun/app/test.java
+# log files etc.
+generates/
 
 # Maven
 target/
