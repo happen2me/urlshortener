@@ -39,7 +39,7 @@ public class ClientGateway {
         this.port = port;
         this.ip = ip;
         try {
-            server = HttpServer.create(new InetSocketAddress(ip, port), backlog);
+            server = HttpServer.create(new InetSocketAddress(port), backlog);
         } catch (IOException e) {
             throw new RuntimeException("Could not start http server on port " + port + " for IP address " + ip);
         }
