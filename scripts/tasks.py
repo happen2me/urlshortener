@@ -52,10 +52,10 @@ from time import sleep
 import fabric
 from invoke import task, UnexpectedExit
 
-from configure import PROJECT_ROOT, CORRECTNESS_TEST_INITIAL_DATASET, CLIENT_DIRECTORY, AWS_IPS, AWS_PEM_FILE, RUN_WORKLOAD
+from configure import PROJECT_ROOT, CORRECTNESS_TEST_INITIAL_DATASET, CLIENT_DIRECTORY, AWS_IPS, AWS_PEM_FILE, RUN_WORKLOAD, DEBUG_WORKLOAD, CORRECTNESS_TEST_WORKLOAD
 
 # JAR file location after calling `build`, relative to the project root
-JAR_FILE_LOCAL = "/target/urlshortener-1.0-jar-with-dependencies.jar"  #### Adjust, try not change too much else.
+JAR_FILE_LOCAL = "/target/urlshortener-1.0-SNAPSHOT-jar-with-dependencies.jar"  #### Adjust, try not change too much else.
 
 ##############################################################################################################
 # Try not to adjust things below here but simply use this setup if possible. Makes correcting easier. Thanks!#
@@ -114,9 +114,9 @@ def run_server_instance_local(c, folder="", **arguments):
   c.run("mkdir -p %s" % folder)
   with c.cd(folder):
     argumentString = dict_to_argument_string(arguments)
-    c.run("java -jar %s %s" % (PROJECT_ROOT + JAR_FILE_LOCAL, argumentString), asynchronous=True)
+    c.run("java -jar %s App %s" % (PROJECT_ROOT + JAR_FILE_LOCAL, argumentString), asynchronous=True)
 
-  sleep(1)
+  #sleep(1)
 
 def get_local_server_addresses(ports):
   if TARGET_ALL_SERVERS:
@@ -146,13 +146,14 @@ def runSingleLocal(c):
   arguments = {"port": 7001,
                "ip": "localhost",
                "database": "./aliases.sqlite",
-               "initial_dataset": CORRECTNESS_TEST_INITIAL_DATASET}
+               "initial_dataset": CORRECTNESS_TEST_INITIAL_DATASET,
+               "msg_port": 9001}
   kill_old_server_instances(c, 7001)
   kill_old_server_instances(c, 7002)
   kill_old_server_instances(c, 7003)
 
   run_server_instance_local(c, "local_1", **arguments)
-  run_client_local(c, RUN_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001]))
+  # run_client_local(c, DEBUG_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001]))
 
 
 @task
@@ -161,8 +162,8 @@ def runTwoLocal(c):
                "ip": "localhost",
                "database": "./aliases.sqlite",
                "initial_dataset": CORRECTNESS_TEST_INITIAL_DATASET,
-               "servers": "8002,8003",
-               "my_address": "8003"
+               "servers": "localhost:8002,localhost:8003",
+               "msg_port": "8003"
                }
   kill_old_server_instances(c, 7001)
   kill_old_server_instances(c, 7002)
@@ -171,10 +172,10 @@ def runTwoLocal(c):
   run_server_instance_local(c, "local_1", **arguments)
 
   arguments["port"] = "7002"
-  arguments["my_address"] = "8002"
+  arguments["msg_port"] = "8002"
   run_server_instance_local(c, "local_2", **arguments)
 
-  run_client_local(c, RUN_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001, 7002]))
+  run_client_local(c, DEBUG_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001, 7002]))
 
 
 @task
@@ -186,7 +187,7 @@ def runNLocal(c, n):
   default_arguments = {"ip": "localhost",
                "database": "./aliases.sqlite",
                "initial_dataset": CORRECTNESS_TEST_INITIAL_DATASET,
-               "servers": ",".join(internalPorts)
+               "servers": "localhost:" + ",localhost:".join(internalPorts)
                }
 
   for i in reversed(list(range(n))):  # Attention I start my servers with ports in descending order! There's no special reason to it,
@@ -194,12 +195,12 @@ def runNLocal(c, n):
     kill_old_server_instances(c, webserverPorts[i])
 
     default_arguments["port"] = webserverPorts[i]
-    default_arguments["my_address"] = internalPorts[i]
+    default_arguments["msg_port"] = internalPorts[i]
     run_server_instance_local(c, "local_" + str(i), **default_arguments)
 
   sleep(1)
 
-  run_client_local(c, RUN_WORKLOAD, CLIENT_THREADS, get_local_server_addresses(webserverPorts))
+  run_client_local(c, CORRECTNESS_TEST_WORKLOAD, CLIENT_THREADS, get_local_server_addresses(webserverPorts))
 
 
 #### Remote Helpers
