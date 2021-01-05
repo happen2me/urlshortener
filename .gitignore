@@ -2,6 +2,8 @@
 src/main/java/co/yuanchun/app/test.java
 # log files etc.
 generates/
+# generated files in scripts
+scripts/
 
 # Maven
 target/

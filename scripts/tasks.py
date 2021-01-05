@@ -132,7 +132,7 @@ def get_local_server_addresses(ports):
 @task
 def build(c):
   with c.cd(PROJECT_ROOT):
-    c.run("mvn package")
+    c.run("mvn clean compile assembly:single")
 
 
 @task
@@ -147,7 +147,7 @@ def runSingleLocal(c):
                "ip": "localhost",
                "database": "./aliases.sqlite",
                "initial_dataset": CORRECTNESS_TEST_INITIAL_DATASET,
-               "msg_port": 9001}
+               "msg_port": 8001}
   kill_old_server_instances(c, 7001)
   kill_old_server_instances(c, 7002)
   kill_old_server_instances(c, 7003)
@@ -162,8 +162,8 @@ def runTwoLocal(c):
                "ip": "localhost",
                "database": "./aliases.sqlite",
                "initial_dataset": CORRECTNESS_TEST_INITIAL_DATASET,
-               "servers": "localhost:8002,localhost:8003",
-               "msg_port": "8003"
+               "servers": "localhost:8002",
+               "msg_port": "8001"
                }
   kill_old_server_instances(c, 7001)
   kill_old_server_instances(c, 7002)
@@ -234,7 +234,7 @@ def run_server_remote(connection, serverIPs):
                "initial_dataset": AWS_INITIAL_DATASET,
                "servers": ",".join(map(lambda ip: ip + ":" + str(AWS_URL_SHORTENER_INTERNAL_PORT), serverIPs)),
                "port": AWS_HTTP_PORT,
-               "my_address": connection.host + ":" + str(AWS_URL_SHORTENER_INTERNAL_PORT)
+               "msg_port": AWS_URL_SHORTENER_INTERNAL_PORT
                }
 
   argumentString = dict_to_argument_string(arguments)
@@ -260,18 +260,23 @@ def collect_log_files_internal(local_context, connection, serverNumber):
 #### Remote Tasks
 #################
 
+@task
+def connectAWS(localContext):
+  serverIP = "54.174.232.177"
+  connection = fabric.Connection(serverIP, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE})
+  connection.run("touch test.txt")
 
 @task
 def run3AWS(localContext):
   clientIP = AWS_IPS[0]
-  serverIPs = list(sorted(AWS_IPS[1:]))
+  serverIPs = list(sorted(AWS_IPS[0:]))
 
   clientConnection = fabric.Connection(clientIP, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE})
   serverConnections = [fabric.Connection(ip, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE}) for ip in serverIPs]
   groupAll = fabric.ThreadingGroup(*AWS_IPS, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE})
 
-  print("Installing software")
-  install_software(groupAll)
+  #print("Installing software")
+  #install_software(groupAll)
 
   print("Pushing client")
   push_client(clientConnection)
@@ -295,7 +300,7 @@ def run3AWS(localContext):
     collect_log_files_internal(localContext, c, i)
 
   print("Running client remotely")
-  run_client_remote(clientConnection, RUN_WORKLOAD, CLIENT_THREADS, serverIPs)
+  run_client_remote(clientConnection, DEBUG_WORKLOAD, CLIENT_THREADS, serverIPs)
 
   sleep(2)  # Waiting for everything to settle after client ended. Normally not needed but better to collect some logs more.
 

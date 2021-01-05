@@ -71,11 +71,15 @@ public class App {
                 String serverList = line.getOptionValue("servers");
                 serverAddresses = new ArrayList<>();
                 List<String> serverStrings = Arrays.asList(serverList.split(","));
+                ServerIdentifier localIdentifier = new ServerIdentifier(ip, replicationPort);
                 for (String serverString : serverStrings) {
                     String[] values = serverString.split(":");
                     String ip = values[0];
                     int port = Integer.parseInt(values[1]);
-                    serverAddresses.add(new ServerIdentifier(ip, port));
+                    ServerIdentifier identifier = new ServerIdentifier(ip, port);                    
+                    if (!identifier.equals(localIdentifier)) {
+                        serverAddresses.add(identifier);
+                    }                    
                 }
                 logger.debug(serverAddresses.size() + " other nodes are specified as:");
                 for (ServerIdentifier serverIdentifier : serverAddresses) {
