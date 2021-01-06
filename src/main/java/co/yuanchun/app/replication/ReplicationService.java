@@ -54,7 +54,13 @@ public class ReplicationService {
             
             // start connection if the socket has never been established
             if(!senders.containsKey(serverIdentifier)){
-                ReplicaSender sender = new ReplicaSender();                
+                ReplicaSender sender = new ReplicaSender();   
+                try {
+                    sender.startConnection(serverIdentifier);
+                    sender.keepConnectionAlive(true);
+                } catch (IOException e) {
+                    logger.error("Can't connect to " + serverIdentifier);
+                }
                 senders.put(serverIdentifier, sender);
             }
 
@@ -62,6 +68,7 @@ public class ReplicationService {
             // or has been interrupted
             ReplicaSender replicaSender = senders.get(serverIdentifier);
             if (replicaSender.isClosed()) {
+                logger.info("Reopenning socket to " + serverIdentifier);
                 try {
                     replicaSender.startConnection(serverIdentifier);
                     replicaSender.keepConnectionAlive(true);
@@ -71,15 +78,15 @@ public class ReplicationService {
                 }
             }
 
-            String ip = serverIdentifier.getIp();
-            int port = serverIdentifier.getPort();
-            try {
-                replicaSender.startConnection(ip, port);
-            } catch (Exception e) {
-                logger.error("Can't connect to " + serverIdentifier + ",  please confirm whether it is online");
-                allSucceeded = false;
-                continue;
-            }
+            // String ip = serverIdentifier.getIp();
+            // int port = serverIdentifier.getPort();
+            // try {
+            //     replicaSender.startConnection(ip, port);
+            // } catch (Exception e) {
+            //     logger.error("Can't connect to " + serverIdentifier + ",  please confirm whether it is online");
+            //     allSucceeded = false;
+            //     continue;
+            // }
             
             boolean succeeded = false;
             try {

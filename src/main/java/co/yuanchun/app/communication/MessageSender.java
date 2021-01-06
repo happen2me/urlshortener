@@ -50,7 +50,7 @@ public abstract class MessageSender {
         }
     }
 
-    public JSONObject sendJson(JSONObject msg) throws IOException{
+    synchronized public JSONObject sendJson(JSONObject msg) throws IOException{
         JSONObject failure = new JSONObject();
         failure.put("type", MessageType.FAILURE);
 
@@ -63,10 +63,9 @@ public abstract class MessageSender {
 
         Object o = null;
         try {
-            logger.debug("reading after sending " + msg.getString("type"));
             o = inputStream.readObject();
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.error("Can't read response of message " + msg.toString());
         }
         if(o instanceof String){
             String jsonString = (String) o;

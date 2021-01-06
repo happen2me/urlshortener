@@ -28,15 +28,17 @@ public class CacheService {
     //ForwardSender sender;
     HashMap<ServerIdentifier, ForwardSender> senders;
     List<ServerIdentifier> allServers;
+    ServerIdentifier selfIdentifier;
 
     public CacheService(DatabaseAdaper database, List<ServerIdentifier> serverList) {
         this.database = database;        
         cache = Caffeine.newBuilder().maximumSize(1000).build();
         senders = new HashMap<>();
+        selfIdentifier = App.GetIdentifier();
         // set up server list
         if (serverList != null) {
-            allServers = new ArrayList<>(serverList);
-            allServers.add(App.GetIdentifier());
+            allServers = new ArrayList<>(serverList);            
+            allServers.add(selfIdentifier);
             Collections.sort(allServers);
         }
     }
@@ -46,10 +48,10 @@ public class CacheService {
      * @param alias alias of the url
      * @return url in String or null
      */
-    public String findAliasInCache(String alias) {
+    synchronized public String findAliasInCache(String alias) {
         String url = cache.getIfPresent(alias);
         if (url != null) {
-            referenceLogger.info(String.format("READ_CACHE_SUCESS(%s)", alias));
+            referenceLogger.info(String.format("READ_CACHE_SUCESS(%s, %s)", alias, url));
         }
         return url;
     }
@@ -83,7 +85,7 @@ public class CacheService {
         // Write to local cache
         if (record != null) {
             cache.put(alias, record.getUrl());
-            referenceLogger.info(String.format("READ_STORAGE_SUCESS(%s)", alias));
+            referenceLogger.info(String.format("READ_STORAGE_SUCESS(%s, %s)", alias, record.getUrl()));
             return record.getUrl();
         } else {
             return "";
@@ -100,10 +102,20 @@ public class CacheService {
         // Connect to destination
         // 
         if (!senders.containsKey(dest)) {
-            senders.put(dest, new ForwardSender());
+            ForwardSender sender = new ForwardSender(selfIdentifier);
+            try {
+                sender.startConnection(dest);
+                sender.keepConnectionAlive(true);
+            } catch (IOException e) {
+                logger.error("Can't connect to " + dest);
+            }
+            senders.put(dest, sender);
         }
         ForwardSender sender = senders.get(dest);
+
+        // restart connection if it's closed
         if (sender.isClosed()) {
+            logger.info("Reopenning socket to " + dest);
             try {
                 sender.startConnection(dest);
                 sender.keepConnectionAlive(true);
@@ -113,15 +125,14 @@ public class CacheService {
             }
         }
 
-        try {
-            sender.startConnection(dest);
-        } catch (IOException e) {
-            logger.error("Can't connect to " + dest + ", please confirm whether the server is still online");
-            return null;
-        }
+        // try {
+        //     sender.startConnection(dest);
+        // } catch (IOException e) {
+        //     logger.error("Can't connect to " + dest + ", please confirm whether the server is still online");
+        //     return null;
+        // }
         JSONObject response = sender.forwardQuery(dest, alias);
-        // keep connection alive
-        // sender.stopConnection();
+
         String url = null;
         if(response.getString("type").equals(MessageType.READ_FORWARD_CONFIRMATION)){
             url = response.getString("url");

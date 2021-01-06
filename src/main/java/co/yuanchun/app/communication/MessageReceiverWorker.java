@@ -66,13 +66,15 @@ public class MessageReceiverWorker implements Runnable{
 
     private void processForwardedRead(JSONObject readParams, ObjectOutputStream output){
         String alias = "";
+        String from = "";
         try {
             alias = readParams.getString("alias");
+            from = readParams.getString("from");
         } catch (JSONException e) {
             logger.error("Forwarded read request should have a parameter of alias, but not found", e);
             return;
         }
-        referenceLogger.info(String.format("FORWARDED_READ_RECEIVED(<other_nodeID>,%s)", alias));
+        referenceLogger.info(String.format("FORWARDED_READ_RECEIVED(%s,%s)", from, alias));
         JSONObject response = new JSONObject();
         String url = null;
         // First look up the alias in cache
@@ -84,18 +86,20 @@ public class MessageReceiverWorker implements Runnable{
                 response.put("type", MessageType.READ_FORWARD_NOT_FOUND);
             }
             else{
-                referenceLogger.info(String.format("READ_STORAGE_SUCESS(%s)", alias));
+                response.put("type", MessageType.READ_FORWARD_CONFIRMATION);
+                response.put("url", url);
+                response.put("alias", alias);
             }
         }
         else{
-            referenceLogger.info(String.format("READ_CACHE_SUCESS(%s)", alias));
-        }
-        if (url != "") {
             response.put("type", MessageType.READ_FORWARD_CONFIRMATION);
             response.put("url", url);
             response.put("alias", alias);
         }
+        
+
         try {
+            logger.debug("sending response " + response.getString("type") + " for alias " + alias);
             output.writeObject(response.toString());
         } catch (IOException e) {
             logger.error("processForwardedRead: can't write to ouput stream", e);
@@ -103,9 +107,11 @@ public class MessageReceiverWorker implements Runnable{
     }
    
     public void start() {
+        ObjectInputStream input = null;
+        ObjectOutputStream output = null;
         try {
-            ObjectInputStream input = new ObjectInputStream(clientSocket.getInputStream());
-            ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
+            input = new ObjectInputStream(clientSocket.getInputStream());
+            output = new ObjectOutputStream(clientSocket.getOutputStream());
             logger.debug("CLIENT SOCKET: " + clientSocket.toString());
             while (!isStopped()) {
                 Object o = null;
@@ -131,6 +137,22 @@ public class MessageReceiverWorker implements Runnable{
             }
         } catch (IOException e) {
             logger.error("Can't get streams from client socket", e);
+        }
+        finally{
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    logger.error("Can't close input object stream: " + e.getMessage());
+                }
+            }
+            if (output != null) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    logger.error("Can't close ouput object stream: " + e.getMessage());
+                }
+            }
         }
 
     }
