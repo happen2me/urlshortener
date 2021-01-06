@@ -60,7 +60,7 @@ public class MessageReceiverWorker implements Runnable{
         try {
             output.writeObject(response.toString());
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("processIncomingReplication: can't write to output stream", e);
         }
     }
 
@@ -98,7 +98,7 @@ public class MessageReceiverWorker implements Runnable{
         try {
             output.writeObject(response.toString());
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("processForwardedRead: can't write to ouput stream", e);
         }
     }
    
@@ -130,7 +130,7 @@ public class MessageReceiverWorker implements Runnable{
                 }
             }
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            logger.error("Can't get streams from client socket", e);
         }
 
     }

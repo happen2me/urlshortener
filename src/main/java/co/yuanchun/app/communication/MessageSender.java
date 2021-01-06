@@ -12,13 +12,12 @@ import org.json.JSONObject;
 public abstract class MessageSender {
     private static final Logger logger = LogManager.getLogger(MessageSender.class.getSimpleName());
     
-    private Socket senderSocket;
+    private Socket senderSocket = null;;
     private ObjectOutputStream outputStream = null;
     private ObjectInputStream inputStream = null;
     protected ServerIdentifier serverToConnect;
 
     public MessageSender() {
-
     }
 
     public void startConnection(ServerIdentifier serverIdentifier) throws IOException{
@@ -115,5 +114,12 @@ public abstract class MessageSender {
         else{
             return true;
         }
+    }
+
+    public boolean isClosed(){
+        if(senderSocket == null || senderSocket.isClosed()){
+            return true;
+        }
+        return false;
     }
 }

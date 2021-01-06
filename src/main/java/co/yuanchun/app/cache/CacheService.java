@@ -3,6 +3,7 @@ package co.yuanchun.app.cache;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -24,13 +25,14 @@ public class CacheService {
     
     DatabaseAdaper database;
     Cache<String, String> cache;
-    ForwardSender sender;
+    //ForwardSender sender;
+    HashMap<ServerIdentifier, ForwardSender> senders;
     List<ServerIdentifier> allServers;
 
     public CacheService(DatabaseAdaper database, List<ServerIdentifier> serverList) {
         this.database = database;        
         cache = Caffeine.newBuilder().maximumSize(1000).build();
-        sender = new ForwardSender();
+        senders = new HashMap<>();
         // set up server list
         if (serverList != null) {
             allServers = new ArrayList<>(serverList);
@@ -94,6 +96,21 @@ public class CacheService {
      * @return url of requested alias, "" if not found, null otherwise
      */
     public String forwardQuery(ServerIdentifier dest, String alias) {
+        // Connect to destination
+        // 
+        if (!senders.containsKey(dest)) {
+            senders.put(dest, new ForwardSender());
+        }
+        ForwardSender sender = senders.get(dest);
+        if (sender.isClosed()) {
+            try {
+                sender.startConnection(dest);
+            } catch (IOException e) {
+                logger.error("Can't connect to " + dest, e);
+                return null; // represent error
+            }
+        }
+
         try {
             sender.startConnection(dest);
         } catch (IOException e) {
@@ -101,7 +118,8 @@ public class CacheService {
             return null;
         }
         JSONObject response = sender.forwardQuery(dest, alias);
-        sender.stopConnection();
+        // keep connection alive
+        // sender.stopConnection();
         String url = null;
         if(response.getString("type").equals(MessageType.READ_FORWARD_CONFIRMATION)){
             url = response.getString("url");

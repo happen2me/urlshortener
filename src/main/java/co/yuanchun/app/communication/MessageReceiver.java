@@ -44,11 +44,12 @@ public class MessageReceiver implements Runnable{
 
     public void start(){
         openServerSocket();
+        logger.debug("Receiver started");
         while(!isStopped()){
             Socket clientSocket = null;
-            try {
-                logger.debug("Receiver started");
+            try {                
                 clientSocket = this.serverSocket.accept();
+                logger.debug("Connected from " + clientSocket.getInetAddress() + ":" + clientSocket.getPort());
             } catch (IOException e) {
                 if (isStopped()) {
                     logger.debug("Replicator stopped");

@@ -3,7 +3,9 @@ package co.yuanchun.app.replication;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
@@ -18,8 +20,7 @@ public class ReplicationService {
 
     
     private List<ServerIdentifier> serverList;
-    
-    private ReplicaSender replicaSender;
+    private HashMap<ServerIdentifier, ReplicaSender> senders;
 
     /**
      * To write to remote database
@@ -31,7 +32,8 @@ public class ReplicationService {
      */
     public ReplicationService(List<ServerIdentifier> serverList) {
         this.serverList = serverList;
-        this.replicaSender = new ReplicaSender();
+        this.senders = new HashMap<>();
+        //this.replicaSender = new ReplicaSender();
     }
 
     /**
@@ -49,6 +51,25 @@ public class ReplicationService {
         for (ServerIdentifier serverIdentifier : serverList) {
             // FutureTask<Boolean> t = new FutureTask<>(new PropagateTask(serverIdentifier, alias, url, expires));
             // tasks.add(t);
+            
+            // start connection if the socket has never been established
+            if(!senders.containsKey(serverIdentifier)){
+                ReplicaSender sender = new ReplicaSender();                
+                senders.put(serverIdentifier, sender);
+            }
+
+            // start connection if the connection hasn't been started
+            // or has been interrupted
+            ReplicaSender replicaSender = senders.get(serverIdentifier);
+            if (replicaSender.isClosed()) {
+                try {
+                    replicaSender.startConnection(serverIdentifier);
+                } catch (IOException e) {
+                    logger.error("Can't connect to " + serverIdentifier, e);
+                    continue;
+                }
+            }
+
             String ip = serverIdentifier.getIp();
             int port = serverIdentifier.getPort();
             try {
@@ -66,7 +87,8 @@ public class ReplicationService {
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
-            replicaSender.stopConnection();
+            // keep connection alive
+            //replicaSender.stopConnection();
             if (!succeeded) {
                 allSucceeded = false;
             }
@@ -87,6 +109,13 @@ public class ReplicationService {
         return allSucceeded;
     }
 
+    public void stop(){
+        for (Map.Entry<ServerIdentifier, ReplicaSender> entry : senders.entrySet()) {
+            ReplicaSender sender = entry.getValue();
+            sender.stopConnection();
+        }
+    }
+
     private class PropagateTask implements Callable<Boolean>{
         private ServerIdentifier serverIdentifier;
         private String alias;
@@ -102,17 +131,18 @@ public class ReplicationService {
 
         @Override
         public Boolean call() throws Exception {
-            String ip = serverIdentifier.getIp();
-            int port = serverIdentifier.getPort();
-            replicaSender.startConnection(ip, port);
-            boolean succeeded = false;
-            try {
-                succeeded = replicaSender.sendMessage(alias, url, expires);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-            replicaSender.stopConnection();
-            return succeeded;           
-        }      
+            // String ip = serverIdentifier.getIp();
+            // int port = serverIdentifier.getPort();
+            // replicaSender.startConnection(ip, port);
+            // boolean succeeded = false;
+            // try {
+            //     succeeded = replicaSender.sendMessage(alias, url, expires);
+            // } catch (IOException e) {
+            //     logger.error(e.getMessage());
+            // }
+            // replicaSender.stopConnection();
+            // return succeeded;
+            return false;
+        }
     }
 }

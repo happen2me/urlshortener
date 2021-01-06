@@ -11,7 +11,6 @@ import co.yuanchun.app.communication.MessageType;
 import co.yuanchun.app.communication.ServerIdentifier;
 
 public class ForwardSender extends MessageSender {
-    private static final Logger referenceLogger = LogManager.getLogger("reference_log");
     private static final Logger logger = LogManager.getLogger(ForwardSender.class.getSimpleName());
     
     public ForwardSender() {
