@@ -71,26 +71,28 @@ public class ClientGateway {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String requestParams = null;
+            long id = requestID.incrementAndGet();
             if("GET".equals(exchange.getRequestMethod())){
-                requestParams = handleGET(exchange);
+                requestParams = handleGET(exchange, id);
                 logger.debug("GET result: " + requestParams.toString());
             }
             else if("POST".equals(exchange.getRequestMethod())){
-                requestParams = handlePost(exchange);                
+                requestParams = handlePost(exchange, id);                
             }
-            handleResponse(exchange, requestParams);
+            handleResponse(exchange, requestParams, id);
         }
 
-        private String handleGET(HttpExchange httpExchange) throws IOException {        
-            long id = requestID.incrementAndGet();
-            String alias = httpExchange.getRequestURI().getPath();
-            if (alias == null || alias == "/") {
-              logger.error("GET requests should have an alias.");
-              httpExchange.sendResponseHeaders(400, 0);
-              httpExchange.close();
-              return "";
-            }
+        private String handleGET(HttpExchange httpExchange, long id) throws IOException {        
+            
+            String alias = httpExchange.getRequestURI().getPath();   
+            if (alias == null || alias == "/" || alias == "/ ") {
+                logger.error("GET requests should have an alias.");
+                httpExchange.sendResponseHeaders(400, 0);
+                httpExchange.close();
+                return "";
+            }         
             alias = alias.substring(1);  // Removes the leading slash
+            
             referenceLogger.info(String.format("RECEIVED_CLIENT_REQUEST(%d, GET,%s)", id, alias));
             String url = node.findAlias(alias);        
             if (url == "") {
@@ -102,8 +104,7 @@ public class ClientGateway {
             return url;
           }
 
-        private String handlePost(HttpExchange exchange){
-            long id = requestID.incrementAndGet();
+        private String handlePost(HttpExchange exchange, long id){
             String requestString = null;
             try (InputStream requestStream = exchange.getRequestBody();) {
                 requestString = tranlateInputStream(requestStream);
@@ -133,8 +134,7 @@ public class ClientGateway {
             return output;
         }
         
-        private void handleResponse(HttpExchange exchange, String response) throws IOException {
-            long id = requestID.get();
+        private void handleResponse(HttpExchange exchange, String response, long id) throws IOException {
             if ("GET".equals(exchange.getRequestMethod())) {
                 if (response == "") {
                     exchange.sendResponseHeaders(404, 0);
