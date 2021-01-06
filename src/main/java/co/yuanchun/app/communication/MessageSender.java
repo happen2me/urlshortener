@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,7 +12,7 @@ import org.json.JSONObject;
 
 public abstract class MessageSender {
     private static final Logger logger = LogManager.getLogger(MessageSender.class.getSimpleName());
-    
+
     private Socket senderSocket = null;;
     private ObjectOutputStream outputStream = null;
     private ObjectInputStream inputStream = null;
@@ -20,8 +21,19 @@ public abstract class MessageSender {
     public MessageSender() {
     }
 
-    public void startConnection(ServerIdentifier serverIdentifier) throws IOException{
+    public void startConnection(ServerIdentifier serverIdentifier) throws IOException {
         startConnection(serverIdentifier.getIp(), serverIdentifier.getPort());
+    }
+
+    public void keepConnectionAlive(boolean flag) {
+        if(senderSocket == null){
+            return;
+        }
+        try {
+            senderSocket.setKeepAlive(flag);
+        } catch (SocketException e) {
+            logger.error("Can't set keep alive flag", e);
+        }
     }
 
     public void startConnection(String ip, int port) throws IOException{
@@ -88,7 +100,7 @@ public abstract class MessageSender {
         try {
             outputStream.writeObject(msg.toString());
         } catch (IOException e1) {
-            logger.error("repsend: error inform server close", e1);
+            logger.error("respond: error inform server close", e1);
         }
 
         try {

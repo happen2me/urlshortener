@@ -21,7 +21,7 @@ import co.yuanchun.app.communication.ServerIdentifier;
 
 public class CacheService {
     private static final Logger referenceLogger = LogManager.getLogger("reference_log");
-    private static final Logger logger = LogManager.getLogger(ForwardSender.class.getSimpleName());
+    private static final Logger logger = LogManager.getLogger(CacheService.class.getSimpleName());
     
     DatabaseAdaper database;
     Cache<String, String> cache;
@@ -67,8 +67,9 @@ public class CacheService {
      * @return results will in between [0, range-1]
      */
     private int hashInRange(String alias, int range) {
-        logger.debug("Hash code of " + alias + " is " + alias.hashCode());
-        return Math.abs(alias.hashCode()) % range;
+        int hashCode =  Math.abs(alias.hashCode());
+        logger.debug(alias + " is hashed as " + hashCode + " and forwarded to " + hashCode % range);
+        return hashCode % range;
     }
 
     /**
@@ -105,8 +106,9 @@ public class CacheService {
         if (sender.isClosed()) {
             try {
                 sender.startConnection(dest);
+                sender.keepConnectionAlive(true);
             } catch (IOException e) {
-                logger.error("Can't connect to " + dest, e);
+                logger.error("Can't connect to " + dest);
                 return null; // represent error
             }
         }

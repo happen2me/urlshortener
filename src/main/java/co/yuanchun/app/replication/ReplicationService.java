@@ -64,8 +64,9 @@ public class ReplicationService {
             if (replicaSender.isClosed()) {
                 try {
                     replicaSender.startConnection(serverIdentifier);
+                    replicaSender.keepConnectionAlive(true);
                 } catch (IOException e) {
-                    logger.error("Can't connect to " + serverIdentifier, e);
+                    logger.error("Can't connect to " + serverIdentifier);
                     continue;
                 }
             }
