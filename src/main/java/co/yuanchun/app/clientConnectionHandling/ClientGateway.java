@@ -43,7 +43,8 @@ public class ClientGateway {
         } catch (IOException e) {
             throw new RuntimeException("Could not start http server on port " + port + " for IP address " + ip);
         }
-        threadPoolExecutor = Executors.newFixedThreadPool(20);
+        // TODO: change thread pool number
+        threadPoolExecutor = Executors.newFixedThreadPool(30);
         server.setExecutor(threadPoolExecutor);
 
         server.createContext("/", new ClientHttpHandler(databasePath, serverList,replicationListenningPort));
@@ -96,10 +97,10 @@ public class ClientGateway {
             referenceLogger.info(String.format("RECEIVED_CLIENT_REQUEST(%d, GET,%s)", id, alias));
             String url = node.findAlias(alias);        
             if (url == "") {
-                logger.info("Queried URL not found");
+                logger.info("handleGET: queried URL not found");
             }
             else{
-                logger.info("Found url " + url);
+                logger.info("handleGET: found url " + url);
             }            
             return url;
           }
@@ -135,6 +136,7 @@ public class ClientGateway {
         }
         
         private void handleResponse(HttpExchange exchange, String response, long id) throws IOException {
+            logger.debug("handling response " + id);
             if ("GET".equals(exchange.getRequestMethod())) {
                 if (response == "") {
                     exchange.sendResponseHeaders(404, 0);
