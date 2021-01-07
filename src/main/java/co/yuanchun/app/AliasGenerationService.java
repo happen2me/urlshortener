@@ -37,7 +37,7 @@ public class AliasGenerationService {
     @Deprecated
     public String insertUrl(String url) {
         AliasRecord record = generateAlias(url);
-        database.insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
+        database.insertAlias(record.getAlias(), record.getUrl(), record.getExpires());
         return record.getAlias();
     }
 

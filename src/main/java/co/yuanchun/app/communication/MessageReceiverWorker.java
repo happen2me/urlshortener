@@ -54,7 +54,7 @@ public class MessageReceiverWorker implements Runnable{
         String expirationDate = record.getString("expires");
         // TODO: compose other_nodeID
         referenceLogger.info(String.format("REMOTE_WRITE_RECEIVED(%s,%s)", getClientSocket().getInetAddress(), alias));
-        database.insertUrl(alias, url, expirationDate);
+        database.insertAlias(alias, url, expirationDate);
         JSONObject response = new JSONObject();
         response.put("type", MessageType.INSERT_CONFIRMATION);
         try {

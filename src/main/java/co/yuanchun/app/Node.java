@@ -62,7 +62,7 @@ public class Node {
         // generate alias with AliasGenerationService
         AliasRecord record = aliasGenerationService.generateAlias(url);
         // save to local database
-        database.insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
+        database.insertAlias(record.getAlias(), record.getUrl(), record.getExpires());
         referenceLogger.info(String.format("LOCAL_WRITE(%s) ", record.getAlias()));
         // replciate to remote database once it's locally saved
         // TODO: make it unblock

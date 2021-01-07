@@ -23,11 +23,11 @@ public class AliasGenerationServiceTest {
         }
         AliasGenerationService aliasGenerationService = new AliasGenerationService(databdase);
         AliasRecord record1 = aliasGenerationService.generateAlias("https://db.in.tum.de");
-        databdase.insertUrl(record1);
+        databdase.insertAlias(record1);
         AliasRecord record2 = aliasGenerationService.generateAlias("https://db.in.tum.de");
-        databdase.insertUrl(record2);
+        databdase.insertAlias(record2);
         AliasRecord record3 = aliasGenerationService.generateAlias("https://db.in.tum.de");
-        databdase.insertUrl(record3);
+        databdase.insertAlias(record3);
         assertEquals("6fN7m2", record1.getAlias());
         assertEquals("f/KLxL", record2.getAlias());
         assertEquals("0RI7uj", record2.getAlias());

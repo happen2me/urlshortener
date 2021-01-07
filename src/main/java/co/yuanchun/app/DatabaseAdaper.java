@@ -18,10 +18,12 @@ public class DatabaseAdaper {
     private final static Logger logger = LogManager.getLogger(DatabaseAdaper.class.getSimpleName());
     private Connection connection;
     private final static String urlTableName = "URL";
-    private final static String insertSQL = "INSERT INTO URL(alias, url, expires) VALUES(?, ?, ?)";
+    private final static String insertSQL = "INSERT INTO " + urlTableName + "(alias, url, expires) VALUES(?, ?, ?)";
     private PreparedStatement insertQuery;
     private final static String readSQL = "SELECT * FROM " + urlTableName + " WHERE alias=?";
     private PreparedStatement readQuery;
+    private final static String deleteSQL = "DELETE FROM " + urlTableName + " WHERE alias=?";
+    private PreparedStatement deleteQuery;
     
 
     public DatabaseAdaper(String dbLocation) throws SQLException {
@@ -49,6 +51,7 @@ public class DatabaseAdaper {
         try {
             insertQuery = connection.prepareStatement(insertSQL);
             readQuery = connection.prepareStatement(readSQL);
+            deleteQuery = connection.prepareStatement(deleteSQL);
         } catch (SQLException e) {
             logger.error(e.getMessage());
         }
@@ -67,7 +70,7 @@ public class DatabaseAdaper {
                     String expires = line[1];
                     String url = line[2];
                     AliasRecord record = new AliasRecord(alias, url, expires);
-                    insertUrl(record);
+                    insertAlias(record);
                 }
             } catch (Exception e) {
                 logger.error("Can't read from csv file: " + datasetPath, e);
@@ -86,8 +89,8 @@ public class DatabaseAdaper {
      * @param url original url
      * @param expires expires String, needs to be in the format of "yyyy-MM-dd HH:mm:ss.msmsms"
      */
-     public void insertUrl(String alias, String url, String expires){
-        insertUrl(alias, url, Timestamp.valueOf(expires));
+     public void insertAlias(String alias, String url, String expires){
+        insertAlias(alias, url, Timestamp.valueOf(expires));
     }
 
     /**
@@ -96,7 +99,7 @@ public class DatabaseAdaper {
      * @param url original url
      * @param expires expiring time stamp, this is of type java.sql.Timestamp
      */
-    synchronized public void insertUrl(String alias, String url, Timestamp expires) {
+    synchronized public void insertAlias(String alias, String url, Timestamp expires) {
         try {
             insertQuery.setString(1, alias);
             insertQuery.setString(2, url);
@@ -115,8 +118,8 @@ public class DatabaseAdaper {
         logger.debug("Successfully inserted " + alias+" : " + url);
     }
 
-    public void insertUrl(AliasRecord record){
-        insertUrl(record.getAlias(), record.getUrl(), record.getExpires());
+    public void insertAlias(AliasRecord record){
+        insertAlias(record.getAlias(), record.getUrl(), record.getExpires());
     }
 
     /**
@@ -126,30 +129,42 @@ public class DatabaseAdaper {
      */
     synchronized public String findAlias(String alias){
         String url = "";
-        try {
-            readQuery.setString(1, alias);
-        } catch (SQLException e1) {
-            logger.error(e1.getMessage());
-            throw new RuntimeException("Could not prepare read query.");
-        }
-        try {
-            ResultSet result = readQuery.executeQuery();
-            if (result.next()) {
+        ResultSet result = lookupAliasInDatabase(alias);
+        if (result != null) {
+            try {
                 url = result.getString("url");
-                logger.info("Found url: " + url + " for alias " + alias);
+            } catch (SQLException e) {
+                logger.error(e);
             }
-            else{
-                logger.info("Alias " + alias + " not found");
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage());
-        }        
+        }
         return url;
     }
 
     synchronized public AliasRecord findAliasRecord(String alias){
         String url = "";
         Timestamp expires = null;
+        ResultSet result = lookupAliasInDatabase(alias);
+        if (result == null) {
+            return null;
+        }
+        else{
+            try {
+                url = result.getString("url");
+                expires = result.getTimestamp("expires");
+            } catch (SQLException e) {
+                logger.error(e);
+            }            
+        }
+        return new AliasRecord(alias, url, expires);        
+    }
+
+    /**
+     * Do the actual look up in database
+     * @param alias
+     * @return
+     */
+    synchronized private ResultSet lookupAliasInDatabase(String alias){
+        ResultSet result = null;
         try {
             readQuery.setString(1, alias);
         } catch (SQLException e1) {
@@ -157,23 +172,18 @@ public class DatabaseAdaper {
             throw new RuntimeException("Could not prepare read query.");
         }
         try {
-            ResultSet result = readQuery.executeQuery();
+            result = readQuery.executeQuery();
             if (result.next()) {
-                url = result.getString("url");
-                expires = result.getTimestamp("expires");
-                logger.info("Found url: " + url + " for alias " + alias);
+                logger.info("Found url: " + result.getString("url") + " for alias " + alias);
             }
             else{
+                // set result to null if not found
+                result = null;
                 logger.info("Alias " + alias + " not found");
             }
         } catch (SQLException e) {
             logger.error(e.getMessage());
         }
-        if (expires == null) {
-            return null;
-        } else {
-            return new AliasRecord(alias, url, expires);   
-        }
-           
+        return result;
     }
 }
