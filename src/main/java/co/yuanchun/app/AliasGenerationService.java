@@ -44,6 +44,10 @@ public class AliasGenerationService {
     public AliasRecord generateAlias(String url){
         String uniqueUrl = url;
         String alias = generateHash(uniqueUrl);
+        // replace / to = if it starts with /
+        if (alias.startsWith("/")) {
+            alias = "=" + alias.substring(1);
+        }
         String urlFound = database.findAlias(alias);
         int unique = -1;
         while(urlFound != ""){ // modify url if duplicated
