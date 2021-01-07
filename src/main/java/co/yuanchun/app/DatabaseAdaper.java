@@ -175,6 +175,12 @@ public class DatabaseAdaper {
             result = readQuery.executeQuery();
             if (result.next()) {
                 logger.info("Found url: " + result.getString("url") + " for alias " + alias);
+                Timestamp expires = result.getTimestamp("expires");
+                if (expires.after(new Timestamp(System.currentTimeMillis()))) {
+                    logger.info(alias + " has expired");
+                    deleteQuery.setString(1, alias);
+                    deleteQuery.executeUpdate();
+                }
             }
             else{
                 // set result to null if not found
