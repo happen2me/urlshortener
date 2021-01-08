@@ -153,7 +153,7 @@ def runSingleLocal(c):
   kill_old_server_instances(c, 7003)
 
   run_server_instance_local(c, "local_1", **arguments)
-  # run_client_local(c, DEBUG_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001]))
+  run_client_local(c, RUN_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001]))
 
 
 @task
@@ -173,9 +173,10 @@ def runTwoLocal(c):
 
   arguments["port"] = "7002"
   arguments["msg_port"] = "8002"
+  arguments["servers"] = "localhost:8001"
   run_server_instance_local(c, "local_2", **arguments)
 
-  run_client_local(c, DEBUG_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001, 7002]))
+  run_client_local(c, RUN_WORKLOAD, CLIENT_THREADS, get_local_server_addresses([7001, 7002]))
 
 
 @task
@@ -200,7 +201,7 @@ def runNLocal(c, n):
 
   sleep(1)
 
-  run_client_local(c, CORRECTNESS_TEST_WORKLOAD, CLIENT_THREADS, get_local_server_addresses(webserverPorts))
+  run_client_local(c, RUN_WORKLOAD, CLIENT_THREADS, get_local_server_addresses(webserverPorts))
 
 
 #### Remote Helpers
@@ -262,21 +263,21 @@ def collect_log_files_internal(local_context, connection, serverNumber):
 
 @task
 def connectAWS(localContext):
-  serverIP = "54.174.232.177"
+  serverIP = "54.82.26.139"
   connection = fabric.Connection(serverIP, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE})
   connection.run("touch test.txt")
 
 @task
 def run3AWS(localContext):
   clientIP = AWS_IPS[0]
-  serverIPs = list(sorted(AWS_IPS[0:]))
+  serverIPs = list(sorted(AWS_IPS[1:]))
 
   clientConnection = fabric.Connection(clientIP, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE})
   serverConnections = [fabric.Connection(ip, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE}) for ip in serverIPs]
   groupAll = fabric.ThreadingGroup(*AWS_IPS, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE})
 
-  #print("Installing software")
-  #install_software(groupAll)
+  print("Installing software")
+  install_software(groupAll)
 
   print("Pushing client")
   push_client(clientConnection)
@@ -300,7 +301,7 @@ def run3AWS(localContext):
     collect_log_files_internal(localContext, c, i)
 
   print("Running client remotely")
-  run_client_remote(clientConnection, DEBUG_WORKLOAD, CLIENT_THREADS, serverIPs)
+  run_client_remote(clientConnection, RUN_WORKLOAD, CLIENT_THREADS, serverIPs)
 
   sleep(2)  # Waiting for everything to settle after client ended. Normally not needed but better to collect some logs more.
 
@@ -322,7 +323,6 @@ def collectLogFiles(localContext):
 # TODO only pushing the client if it changed, rscync?
 # TODO provide ability to shutdown servers, with server side implementation
 # TODO provide signal that all servers have been started and connected, with server side implemenation
-# TODO use address:port for local and remote
 
 # TODO on client sanitize server addresses parameter: should end on /, needs to start with "HTTP", should include a port
 
