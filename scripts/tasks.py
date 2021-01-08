@@ -109,6 +109,10 @@ def run_client_local(c, workload, threads, servers):
   with c.cd(CLIENT_DIRECTORY):
     c.run("./bin/ycsb run urlshortener -P %s -threads %d -p servers=%s" % (workload, threads, servers), echo=True)
 
+@task
+def generateCsv(c):
+  with c.cd(CLIENT_DIRECTORY):
+    c.run("./bin/ycsb load csv -P " + RUN_WORKLOAD + " -threads 1")
 
 def run_server_instance_local(c, folder="", **arguments):
   c.run("mkdir -p %s" % folder)
@@ -316,6 +320,8 @@ def collectLogFiles(localContext):
   serverConnections = [fabric.Connection(ip, user=AWS_USER, connect_kwargs={"key_filename": AWS_PEM_FILE}) for ip in serverIPs]
   for i, c in enumerate(serverConnections):
     collect_log_files_internal(localContext, c, i)
+
+
 
 
 # TODO allow to run different workloads
