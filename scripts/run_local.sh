@@ -9,9 +9,6 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     fuser -k -n tcp 8082
 fi
 
-# compile
-mvn clean compile assembly:single
-
 # run 3 servers in background
 mkdir -p generates/node1
 mkdir -p generates/node2
